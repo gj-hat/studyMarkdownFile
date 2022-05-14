@@ -963,7 +963,9 @@ public class Consumer1 {
 
    
 
-3. 配置类(配置交换机 队列 绑定关系等等)
+3. 配置类(配置交换机 队列 绑定关系等等) 
+
+   **配置类中会自动进行绑定和创建 但是在其他地方需要使用RabbitAdmin对象进行绑定 参考9.1**
 
    ```java
    package com.rabbitmqspringboot.config;
@@ -1394,7 +1396,7 @@ mq推送了消息给消费者后，我们怎么知道消息被消费者消费了
 
 #### MANUAL模式 (手动模式)
 
-**注意 : channel.basicReject(message.getMessageProperties().getDeliveryTag(),true); 的第二个参数是requeue , 这个参数跟 "spring.rabbitmq.listener.simple.default-requeue-rejected=true " 有重义 , 而却是方法的优先级高于配置的 . 有没有大佬能系统解释下这块的 .** 
+**注意 : 需要开启手动应答 "spring.rabbitmq.listener.simple.acknowledge-mode=manual " ** 
 
 ``` java
 @Component
@@ -1403,18 +1405,23 @@ public class HelloReceiver {
     @RabbitHandler
     public void process(String hello,Channel channel, Message message) throws IOException {
         try {
-            //告诉服务器收到这条消息 已经被我消费了 可以在队列删掉 这样以后就不会再发了 否则消息服务器以为这条消息没处理掉 后续还会在发
-            channel.basicAck(message.getMessageProperties().getDeliveryTag(),false);
+            //告诉服务器收到这条消息 已经被我消费了 可以在队列删掉 这样以后就不会再发了 否则消息服务器以为这条消息没处理掉 后续还会在发   
+          //fasle表示这个消息被拒绝了但是不用放回普通队列中
+          // true 表示拒绝了 但是需要放回队列中去
+           	 // 是以message.getMessageProperties().getDeliveryTag()这个属性区分消息
+          
+channel.basicAck(message.getMessageProperties().getDeliveryTag(),false);
         } catch (IOException e) {
             e.printStackTrace();
-            //丢弃这条消息 或者 进入死信队列
-　　　　　　channel.basicReject(message.getMessageProperties().getDeliveryTag(),true);
+          //丢弃这条消息 或者 进入死信队列
+          //fasle表示这个消息被拒绝了但是不用放回普通队列中
+          // true 表示拒绝了 但是需要放回队列中去
+          channel.basicReject(message.getMessageProperties().getDeliveryTag(),false);
 　　　　　　　//channel.basicNack(message.getMessageProperties().getDeliveryTag(), false,false);
 　　　　} 
 　　} 
 }
 ```
-
 
 #### AUTO模式
 
@@ -1655,7 +1662,7 @@ ReturnCallback的回应消息为NO_ROUTE找不到队列
       队列过期时间，当auto delete设置为true时，才会生效
 
    4. **x-max-length**
-      队列存放最大就绪消息数量，超过限制时，从头部丢弃消息   默认最大数量限制与操作系统有关。
+      队列存放最大就绪消息数量，超过限制时，从头部丢弃消息   默认最大数量限制与操作系统有关。  也就称为了死信
 
    5. **x-max-length-bytes**
       队列存放的所有消息总大小，超过限制时，从头部丢弃消息
@@ -1695,3 +1702,322 @@ ReturnCallback的回应消息为NO_ROUTE找不到队列
 
 
 
+## 09_RabbitAdmin和RabbitTemplate
+
++ RabbitAdmin
+
+  封装了对RabbitMQ的管理工作 比如创建删除交换机队列,绑定等等
+
++ RabbitTemplate
+
+  封装了发送和接收消息的API
+
+
+
+### 9.1 RabbitAdmin
+
+> RabbitAdmin 类可以很好的操作 rabbitMQ，在 Spring 中直接进行注入即可。
+
+ **注意**: autoStartup 必须设置为 true，否则 Spring 容器不会加载 RabbitAdmin 类。
+
+#### 9.1.1 配置:
+
+``` java
+@Configuration
+public class RabbitmqConfig {
+    // 声明交换机模式为 定向模式    按照Routing Key定向发送到队列
+    public static final String NORMAL_EXCHANGE_NAME = "normal_exchange";
+    public static final String DEAD_EXCHANGE_NAME = "dead_exchange";
+    public static final String NORMAL_QUEUE_NAME = "normal_queue";
+    public static final String DEAD_QUEUE_NAME = "dead_queue";
+    // 路由key
+    public static final String DEAD_ROUTING_KEY = "dead_routing_key";
+    public static final String NORMAL_ROUTING_KEY = "normal_routing_key";
+    @Autowired
+    private RabbitAdmin rabbitAdmin;
+    @Bean
+    public RabbitAdmin rabbitAdmin(ConnectionFactory connectionFactory) {
+        RabbitAdmin rabbitAdmin = new RabbitAdmin(connectionFactory);
+        // 只有设置为 true，spring 才会加载 RabbitAdmin 这个类
+        rabbitAdmin.setAutoStartup(true);
+        return rabbitAdmin;
+    }
+    // 普通交换机  路由定向模式
+    @Bean("normalExchange")
+    public Exchange driect() {
+        // 如要进行配置 在后面直接点就可以了   具体点进去源码看看
+        return ExchangeBuilder
+                .directExchange(NORMAL_EXCHANGE_NAME)
+                .durable(false)
+                .build();
+    }
+    // 死信交换机  路由定向模式
+    @Bean("deadExchange")
+    public Exchange dead() {
+        // 如要进行配置 在后面直接点就可以了   具体点进去源码看看
+        return ExchangeBuilder
+                .directExchange(DEAD_EXCHANGE_NAME)
+                .durable(false)
+                .build();
+    }
+    // 普通消息队列
+    @Bean("normal_queue")
+    public Queue normalQueue() {
+        /**
+         * 有三种情况成为死信队列
+         * 1. 消息被拒绝
+         * 2. 消息超时
+         * 3. 队列满了
+         */
+        HashMap<String, Object> map = new HashMap<>();
+        // 死信交换机
+        map.put("x-dead-letter-exchange", DEAD_EXCHANGE_NAME);
+        // 死信队列的路由key
+        map.put("x-dead-letter-routing-key", DEAD_ROUTING_KEY);
+        // 设置过期时间   单位是毫秒   当然也可以在生产者发送消息的时候设置
+//        map.put("x-message-ttl", 10000);
+        return QueueBuilder
+                .durable(NORMAL_QUEUE_NAME)    // 默认是持久化的
+//                .exclusive()    // 排他的  不共享
+//                .autoDelete()  // 不自动删除
+                .withArguments(map)   // 参数r
+                .build();
+    }
+    // 死信队列
+    @Bean("dead_queue")
+    public Queue deadQueue() {
+        return QueueBuilder
+                .durable(DEAD_QUEUE_NAME)    // 默认是持久化的
+//                .exclusive()    // 排他的  不共享
+//                .autoDelete()  // 不自动删除
+                .build();
+    }
+    // 绑定死信消息队列和交换机
+    @Bean("dead_binding")
+    public Binding bingDeadQueueExchange(@Qualifier("dead_queue") Queue queue, @Qualifier("deadExchange") Exchange exchange) {
+
+        return BindingBuilder.bind(queue)
+                .to(exchange)
+                .with(DEAD_ROUTING_KEY)
+                .noargs();
+
+    }
+    // 绑定普通消息队列和交换机
+    @Bean("normal_binding")
+    // 此处的队列不一定一开始创建 要么是消费者创建  如果没有消费者则不会触发创建(当然如果有生产者 也出触发这个方法)
+    public Binding bingNormalQueueExchange(@Qualifier("normal_queue") Queue queue, @Qualifier("normalExchange") Exchange exchange) {
+        // 同理想配置更多 则加入and
+        return BindingBuilder.bind(queue)
+                .to(exchange)
+                .with(NORMAL_ROUTING_KEY)
+                .noargs();
+    }
+    // 绑定 写在配置类的时候 省略  但是在其他地方绑定就需要显式的写出来
+    @Bean
+    public void bindingDead(@Qualifier("dead_binding") Binding binding) {
+        rabbitAdmin.declareBinding(binding);
+    }
+    @Bean
+    public void bindingNormal(@Qualifier("normal_binding") Binding binding) {
+        rabbitAdmin.declareBinding(binding);
+    }
+
+}
+```
+
+
+
+#### 9.1.2 使用: 
+
+任何地方都可以进行创建删除交换机队列绑定等的管理操作
+
+``` java
+    @Autowired
+    private RabbitAdmin rabbitAdmin;
+    public static final String NORMAL_EXCHANGE_NAME = "controllerExchange";
+    public static final String NORMAL_QUEUE_NAME = "controllerQueue";
+    public String news(){
+        Exchange exchange = ExchangeBuilder
+                .directExchange(NORMAL_EXCHANGE_NAME)
+                .durable(true)
+                .build();
+        Queue queue = QueueBuilder
+                .durable(NORMAL_QUEUE_NAME)    // 默认是持久化的
+                .autoDelete()  // 不自动删除
+                .build();
+        BindingBuilder.bind(queue)
+                .to(exchange)
+                .with("controllerKey")
+                .noargs();
+
+      // 这两个是创建交换机和队列的代码
+        rabbitAdmin.declareExchange(exchange);
+        rabbitAdmin.declareQueue(queue);
+
+        // 绑定
+        BindingBuilder.bind(queue).to(exchange).with("controllerKey").noargs();
+    }
+
+
+// 另一种方式
+   @Autowired
+   private RabbitAdmin rabbitAdmin;
+
+      @Test
+   public void testAdmin() throws Exception {
+      rabbitAdmin.declareExchange(new DirectExchange("test.direct", false, false));
+      rabbitAdmin.declareExchange(new TopicExchange("test.topic", false, false));
+      rabbitAdmin.declareExchange(new FanoutExchange("test.fanout", false, false));
+      rabbitAdmin.declareQueue(new Queue("test.direct.queue", false));
+      rabbitAdmin.declareQueue(new Queue("test.topic.queue", false));
+      rabbitAdmin.declareQueue(new Queue("test.fanout.queue", false));
+
+        rabbitAdmin.declareBinding(new Binding("test.direct.queue",
+                Binding.DestinationType.QUEUE,
+                "test.direct", "direct", new HashMap<>()));
+
+        rabbitAdmin.declareBinding(
+                BindingBuilder
+                        .bind(new Queue("test.topic.queue", false))        //直接创建队列
+                        .to(new TopicExchange("test.topic", false, false))    //直接创建交换机 建立关联关系
+                        .with("user.#"));    //指定路由Key
+
+        rabbitAdmin.declareBinding(
+                BindingBuilder
+                        .bind(new Queue("test.fanout.queue", false))
+                        .to(new FanoutExchange("test.fanout", false, false)));
+
+        //清空队列数据
+        rabbitAdmin.purgeQueue("test.topic.queue", false);
+   }
+```
+
+
+
+### 9.2 RabbitTemplate
+
+在配置类中声明RabbitTemplate(写不写都行) 其他类中就可以进行自动注入了
+
+**RabbitTemplate 核心 API 介绍**
+
+下面我们来看一下在 RabbitTemplate 中，都有哪些核心的 API 。
+
+1. MessageProperties 实例，用于对消息的 properties 参数进行描述；
+2. Message 实例，用于对消息体进行描述；
+3. send() 方法，用于将原始消息发送到 RabbitMQ Server 中；
+4. convertAndSend() 方法，用于将原始消息进行转换，并且将转换过后的消息发送到 RabbitMQ Server 中；
+5. addListener() 方法，用于为当前消息模板设置消息监听类型。
+
+
+
+
+
+
+
+#### 9.2.1配置:
+
+``` java
+@Bean
+public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
+  RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
+  return rabbitTemplate;
+}
+```
+
+
+
+#### 9.2.2 使用
+
+**发送消息演示**
+
+``` java
+@Autowired
+private RabbitTemplate rabbitTemplate;
+MessageProperties messageProperties = new MessageProperties();
+messageProperties.getHeaders().put("test1", "test1");
+messageProperties.getHeaders().put("test2", "test2");
+Message message = new Message("Hello RabbitTemplate".getBytes(), messageProperties);
+rabbitTemplate.convertAndSend("test_direct_001", "test.123", message, new MessagePostProcessor() {
+  @Override
+  public Message postProcessMessage(Message message) throws AmqpException {
+  message.getMessageProperties().getHeaders().put("test1", "test111");
+  message.getMessageProperties().getHeaders().put("test2", "test222");
+  return message;
+  }
+});
+```
+
+
+
+代码解释:
+
+1. 第 1-2 行，我们使用 Autowired 注解，来将 RabbitTemplate 注入进来，并用一个私有变量 rabbitTemplate 来接收。
+
+2. 第 3 行，我们实例化了一个 MessageProperties 的实例 messageProperties 。
+
+3. 第 4-5 行，我们使用 messageProperties 实例的 getHeaders 方法获取到消息的 headers 参数，并分别 put 了两个不同的 header 。
+
+4. 第 6 行，我们初始化了一个 Message 消息实例 message ，并在构造方法中设置了消息体的内容为 Hello RabbitTemplate ，且将该消息的额外参数 messageProperties 也一并进行了设置。
+
+5. 第 7-14 行，**我们使用 rabbitTemplate 的 convertAndSend 方法，将消息进行转换之后发送到了 RabbitMQ Server 中，** 其中，convertAndSend 方法的第一个参数为要使用的交换机名称，这里是 test_direct_001 ，第二个参数为 routingKey ，这里是 test.123 ，第三个参数是我们需要发送的消息 message ，第四个参数则是消息发送成功后的监听器。
+
+   对于这个监听器，这里采用了 new MessagePostProcessor 的匿名内部类的形式进行实现，要添加 MessagePostProcessor 消息监听器，需要重写 postProcessMessage 方法，即消息发送成功后的方法，在该方法中，我们可以对消息发送成功后进行进一步的设置，最后将设置好的 Message 进行返回。
+
+
+
+>**Tips:** 
+>
+>1. send 方法和 convertAndSend 方法，区别之处在于，前者不会对消息进行转换，我们传递进去的是什么消息，就会往 RabbitMQ Server 中发送什么消息；后者则会将我们传递进去的消息进行转换，具体如何转换的需要我们观察源码之后才会清楚，并将转换过后的消息发送到 RabbitMQ Server中；
+>
+>2. addListener 方法在 RabbitTemplate 中并不是使用频率最高的，但确是经常使用的一种消息监听的添加方法，如果我们不能在 convertAndSend 方法中添加消息监听，才会考虑使用 addListener 方法。
+
+
+
+接收消息:
+
+1. 手动接收
+
+   ``` java
+   	//接收消息
+   	public void receive(){
+       // tree是队列名
+   		Object tree = rabbitTemplate.receiveAndConvert("tree");
+       receiveAndReply
+   		System.out.println("类型："+tree.getClass());
+   		System.out.println("消息："+tree);
+   	}
+   
+   // 接收并应答
+       public String receive() {
+           // 接收消息并手动应答
+           rabbitTemplate.execute((ChannelCallback<Message>) channel -> {
+               GetResponse response = channel.basicGet("normal_queue", false);
+               byte[] body = response.getBody();
+               String msg = new String(body);
+               System.out.println("接收到消息：" + msg);
+               channel.basicReject(response.getEnvelope().getDeliveryTag(), true);
+               return null;
+           });
+           System.out.println("消息：" + "拒绝成功");
+           return "接收失败了";
+       }
+   ```
+
+2. 设置监听器
+
+   ``` java
+   @Service
+   public class BookService {
+       @RabbitListener(queues = "tree.news")
+       public void receiveListener01(Book book){
+           System.out.println("收到消息"+book);
+       }
+       @RabbitListener(queues = "tree.emps")
+       public void receiveListener02(Message message){
+           System.out.println("message.body:"+message.getBody());
+          System.out.println("message.getMessageProperties():"+message.getMessageProperties());
+       }
+   }
+   ```
+
+   

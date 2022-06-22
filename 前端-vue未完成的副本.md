@@ -2034,7 +2034,94 @@ export default {
 
 
 
-# cli消息订阅与发布
+# Vue脚手架
+
+
+
+## 01_什么是vue-cli(vue3要求cli版本大于4,0 )
+
+Vue CLI 是一个基于 Vue.js 进行快速开发的完整系统，提供：
+
+- 通过 `@vue/cli` 实现的交互式的项目脚手架。
+- 通过 `@vue/cli` + `@vue/cli-service-global` 实现的零配置原型开发。
+- 一个运行时依赖 (`@vue/cli-service`)，该依赖：
+  - 可升级；
+  - 基于 webpack 构建，并带有合理的默认配置；
+  - 可以通过项目内的配置文件进行配置；
+  - 可以通过插件进行扩展。
+- 一个丰富的官方插件集合，集成了前端生态中最好的工具。
+- 一套完全图形化的创建和管理 Vue.js 项目的用户界面。
+
+Vue CLI 致力于将 Vue 生态中的工具基础标准化。它确保了各种构建工具能够基于智能的默认配置即可平稳衔接，这样你可以专注在撰写应用上，而不必花好几天去纠结配置的问题。与此同时，它也为每个工具提供了调整配置的灵活性，无需 eject。
+
+
+
+## 02_安装
+
+1. 全局安装`@vue/cli`
+
+   ``` shell
+   npm install -g @vue/cli
+   ```
+
+   注意:
+
+   + 换源
+
+     ``` shell
+     npm config set registry https://registry.npom.taobao.org
+     ```
+
+     
+
+   + vue-cli隐藏了所有的webpack的配置, 可以使用如下的命令查看
+
+     ``` shell
+     vue-cli-service inspect > output.js
+     ```
+
+     
+
+2. 切换到项目目录中 使用如下的命令
+
+   ``` shell
+   vue create vueProName
+   ```
+
+3. 运行serve
+
+   ``` shell
+   npm run serve
+   ```
+
+   
+
+## 03_目录文件简单介绍
+
+``` tree
+.
+└── vue-test
+    ├── README.md                       // readme文件
+    ├── babel.config.js                
+    ├── package-lock.json              //   包管理 一般不需要注意
+    ├── package.json                  // webpack包文件
+    ├── public
+    │   ├── favicon.ico            // 标签图 不可以改
+    │   └── index.html                   //  界面     不可以改 
+    └── src                            // 源文件        不可以改
+        ├── App.vue                     // vue入口组         不可以改
+        ├── assets                       // 静态文件
+        │   └── logo.png      
+        ├── components                   //  vue的各个组件
+        │   └── HelloWorld.vue
+        └── main.js                      // 项目的入口              不可以改
+```
+
+
+
+
+
+## 04_消息订阅与发布
 
 作用: 组件间通信
 
@@ -2300,7 +2387,7 @@ export default {
 
 
 
-# 案例合集2.0
+# 案例合集
 
 组件化编程流程(通用):
 
@@ -2309,6 +2396,8 @@ export default {
    1. 数据的类型. 名称是什么
    2. 数据保存在那个组件
 3. 交互 —— 从绑定时间监听开始
+
+
 
 
 
@@ -3897,39 +3986,38 @@ https://www.bilibili.com/video/BV1Zy4y1K7SH?p=89
 
 ### 2.安装vue Cli
 
-    npm install -g @vue/cli
+    npm install -g vue-cli
 
 ## 3.第一个vue脚手架项目
 
 ### 1.创建vue脚手架第一个项目
 
-    vue create  项目名
+    vue init webpack 项目名
 ### 2.创建第一个项目
 
-    |-node_modules       -- 所有的项目依赖包都放在这个目录下
-    |-public             -- 公共文件夹
-    ---|favicon.ico      -- 网站的显示图标
-    ---|index.html       -- 入口的html文件
-    |-src                -- 源文件目录，编写的代码基本都在这个目录下
-    ---|assets           -- 放置静态文件的目录，比如logo.pn就放在这里
-    ---|components       -- Vue的组件文件，自定义的组件都会放到这
-    ---|router           -- vue-router vue路由的配置文件，
-    ---|store            -- 存放 vuex 为vue专门开发的状态管理器，
-    ---|views            -- 存放视图文件，
-    ---|App.vue          -- 根组件，这个在Vue2中也有
-    ---|main.ts          -- 入口文件，因为采用了TypeScript所以是ts结尾
-    ---|shims-vue.d.ts   -- 类文件(也叫定义文件)，因为.vue结尾的文件在ts中不认可，所以要有定义文件
-    |-.browserslistrc    -- 在不同前端工具之间公用目标浏览器和node版本的配置文件，作用是设置兼容性
-    |-.eslintrc.js       -- Eslint的配置文件，不用作过多介绍
-    |-.gitignore         -- 用来配置那些文件不归git管理
-    |-package.json       -- 命令配置和包管理文件
-    |-README.md          -- 项目的说明文件，使用markdown语法进行编写
-    |-vue.config.json    -- 请求代理, webpack 配置, 打包输出等都会在这里配置
-    |-yarn.lock          -- 使用yarn后自动生成的文件，由Yarn管理，安装yarn包时的重要信息存储到yarn.lock文件中
+    hello     ------------->项目名
+    -build  ------------->用来使用webpack打包使用build依赖  构建一些依赖文件
+    -config ------------->用来做整个项目配置目录   主要用来对 开发 测试 环境进行配置
+    -node_modules  ------>用来管理项目中使用依赖
+    -src                     ------>用来书写vue的源代码[重点]
+        +assets      ------>用来存放静态资源 [重点]
+        components   ------>用来书写Vue组件 [重点]
+        router           ------>用来配置项目中路由[重点]
+        App.vue      ------>项目中根组件[重点]
+        main.js      ------>项目中主入口[重点]
+    -static        ------>其它静态
+    -.babelrc      ------> 将es6语法转为es5运行
+    -.editorconfig ------> 项目编辑配置
+    -.gitignore    ------> git版本控制忽略文件
+    -.postcssrc.js ------> 源码相关js
+    -index.html    ------> 项目主页
+    -package.json  ------> 类似与pom.xml 依赖管理  jquery 不建议手动修改
+    -package-lock.json ----> 对package.json加锁
+    -README.md         ----> 项目说明文件
 
 ### 3.如何运行在项目的根目录中执行
 
-    npm run 运行前端系统
+    npm start 运行前端系统
 
 ### 4.如何访问项目
 
@@ -3995,1280 +4083,30 @@ npm run dev
 
 
 
-# 常用 Composition API
 
-官方文档: https://v3.cn.vuejs.org/guide/composition-api-introduction.html
 
-## 1.拉开序幕的setup
 
-1. 理解：Vue3.0中一个新的配置项，值为一个函数。
-2. setup是所有<strong style="color:#DD5145">Composition API（组合API）</strong><i style="color:gray;font-weight:bold">“ 表演的舞台 ”</i>。
-3. 组件中所用到的：数据、方法等等，均要配置在setup中。
-4. setup函数的两种返回值：
-   1. 若返回一个对象，则对象中的属性、方法, 在模板中均可以直接使用。（重点关注！）
-   2. <span style="color:#aad">若返回一个渲染函数：则可以自定义渲染内容。（了解）</span>
-5. 注意点：
-   1. 尽量不要与Vue2.x配置混用
-      - Vue2.x配置（data、methos、computed...）中<strong style="color:#DD5145">可以访问到</strong>setup中的属性、方法。
-      - 但在setup中<strong style="color:#DD5145">不能访问到</strong>Vue2.x配置（data、methos、computed...）。
-      - 如果有重名, setup优先。
-   2. setup不能是一个async函数，因为返回值不再是return的对象, 而是promise, 模板看不到return对象中的属性。（后期也可以返回一个Promise实例，但需要Suspense和异步组件的配合）
 
-##  2.ref函数
 
-- 作用: 定义一个响应式的数据
 
-- 语法: ```const xxx = ref(initValue)``` 
 
-  - 创建一个包含响应式数据的<strong style="color:#DD5145">引用对象（reference对象，简称ref对象）</strong>。
-  - JS中操作数据： ```xxx.value```
-  - 模板中读取数据: 不需要.value，直接：```<div>{{xxx}}</div>```
 
-- 备注：
 
-  - 接收的数据可以是：基本类型、也可以是对象类型。
-  - 基本类型的数据：响应式依然是靠``Object.defineProperty()``的```get```与```set```完成的。
-  - 对象类型的数据：内部 <i style="color:gray;font-weight:bold">“ 求助 ”</i> 了Vue3.0中的一个新函数—— ```reactive```函数。
 
-- 实例:
 
-  ``` js
-  <template>
-  <h1>app组件</h1>
-    <h2>姓名: {{name}}</h2>
-    <h2>年龄:{{age}}</h2>
-    <h2>岗位:{{job.type}}</h2>
-    <h2>公司:{{job.company}}</h2>
-  <button @click="sayHello">张三说</button>
-  <button @click="changeInfo">修改信息 响应式的</button>
-  </template>
-  <script>
-  import {ref} from 'vue'
-  
-  export default { // vue3的形式
-    name: 'App',
-    // 此处只是这是setup  暂时不考虑响应式
-    setup(){
-      // 数据 之前是data  现在直接在这里写
-      let name = ref( '张三')
-      let age =  ref(13)
-      let job = ref({
-        type: '前端',
-        company: '腾讯'
-      })
-      // 方法  之前在methods中写
-      function sayHello(){
-        alert(name.value+': hello')
-      }
-      function changeInfo(){
-        name.value = '王五'
-        age.value = 14
-        job.value.type = '后端'
-        job.value.company = '百度'
-      }
-      return {
-        // 将内部的数据和方法暴露出去
-        name,
-        age,
-        job,
-        sayHello,
-        changeInfo
-      }
-    }
-  }
-  ```
 
-  
 
-## 3.reactive函数
 
-- 作用: 定义一个<strong style="color:#DD5145">对象类型</strong>的响应式数据（基本类型不要用它，要用```ref```函数）
 
-- 语法：```const 代理对象= reactive(源对象)```接收一个对象（或数组），返回一个<strong style="color:#DD5145">代理对象（Proxy的实例对象，简称proxy对象）</strong>
 
-- reactive定义的响应式数据是“深层次的”。
 
-- 内部基于 ES6 的 Proxy 实现，通过代理对象操作源对象内部数据进行操作。
 
-- 实例:  对于对象类型可以不用使用`value`
 
-  ``` js
-  <template>
-  <h1>app组件</h1>
-    <h2>姓名: {{name}}</h2>
-    <h2>年龄:{{age}}</h2>
-    <h2>岗位:{{job.type}}</h2>
-    <h2>公司:{{job.company}}</h2>
-  <button @click="sayHello">张三说</button>
-  <button @click="changeInfo">修改信息 响应式的</button>
-  </template>
-  <script>
-  import {ref,reactive} from 'vue'
-  
-  export default { // vue3的形式
-    name: 'App',
-    // 此处只是这是setup  暂时不考虑响应式
-    setup(){
-      // 数据 之前是data  现在直接在这里写
-      let name = ref( '张三')
-      let age =  ref(13)
-      let job = reactive({
-        type: '前端',
-        company: '腾讯'
-      })
-      // 方法  之前在methods中写
-      function sayHello(){
-        alert(name.value+': hello')
-      }
-      function changeInfo(){
-        name.value = '王五'
-        age.value = 14
-        job.type = '后端'
-        job.company = '百度'
-      }
-      return {
-        // 将内部的数据和方法暴露出去
-        name,
-        age,
-        job,
-        sayHello,
-        changeInfo
-      }
-    }
-  }
-  ```
 
 
 
-## 4.Vue3.0中的响应式原理
 
 
 
-### vue2.x的响应式
 
-- 实现原理：
-
-  - 对象类型：通过```Object.defineProperty()```对属性的读取、修改进行拦截（数据劫持）。
-
-  - 数组类型：通过重写更新数组的一系列方法来实现拦截。（对数组的变更方法进行了包裹）。
-
-    ```js
-    Object.defineProperty(data, 'count', {
-        get () {}, 
-        set () {}
-    })
-    ```
-
-- 存在问题：
-
-  - 新增属性、删除属性, 界面不会更新。
-  - 直接通过下标修改数组, 界面不会自动更新。
-
-### Vue3.0的响应式
-
-- 实现原理: 
-
-  - 通过Proxy（代理）:  拦截对象中任意属性的变化, 包括：属性值的读写、属性的添加、属性的删除等。
-
-  - 通过Reflect（反射）:  对源对象的属性进行操作。
-
-  - MDN文档中描述的Proxy与Reflect：
-
-    - Proxy：https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Proxy
-
-    - Reflect：https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Reflect
-
-      ```js
-      new Proxy(data, {
-      	// 拦截读取属性值
-          get (target, prop) {
-          	return Reflect.get(target, prop)
-          },
-          // 拦截设置属性值或添加新属性
-          set (target, prop, value) {
-          	return Reflect.set(target, prop, value)
-          },
-          // 拦截删除属性
-          deleteProperty (target, prop) {
-          	return Reflect.deleteProperty(target, prop)
-          }
-      })
-      
-      proxy.name = 'tom'   
-      ```
-
-## 5.reactive对比ref
-
--  从定义数据角度对比：
-
-   -  ref用来定义：<strong style="color:#DD5145">基本类型数据</strong>。
-   -  reactive用来定义：<strong style="color:#DD5145">对象（或数组）类型数据</strong>。
-   -  备注：ref也可以用来定义<strong style="color:#DD5145">对象（或数组）类型数据</strong>, 它内部会自动通过```reactive```转为<strong style="color:#DD5145">代理对象</strong>。
-
--  从原理角度对比：
-
-   -  ref通过``Object.defineProperty()``的```get```与```set```来实现响应式（数据劫持）。
-   -  reactive通过使用<strong style="color:#DD5145">Proxy</strong>来实现响应式（数据劫持）, 并通过<strong style="color:#DD5145">Reflect</strong>操作<strong style="color:orange">源对象</strong>内部的数据。
-
--  从使用角度对比：
-
-   -  ref定义的数据：操作数据<strong style="color:#DD5145">需要</strong>```.value```，读取数据时模板中直接读取<strong style="color:#DD5145">不需要</strong>```.value```。
-   -  reactive定义的数据：操作数据与读取数据：<strong style="color:#DD5145">均不需要</strong>```.value```。
-
--  实例代码:
-
-   ``` js
-   <template>
-     <h1>---------响应式增删改查数据组件---------------</h1>
-     <ul>
-       <li>姓名: {{name1}}</li>
-       <li>年龄: {{age}}</li>
-       <li v-show="sex">性别: {{sex}}</li>
-       <li>岗位:{{job.type}}</li>
-       <li>公司:{{job.company}}</li>
-       <li v-show="job.address">地址:{{job.address}}</li>
-     </ul>
-   <button @click="delSex()">删除性别</button>
-   <button @click="addAddress()">新增地址</button>
-   <button @click="delAddress()">删除地址</button>
-   </template>
-   <script>
-   import {ref, reactive} from "vue";
-   export default {
-     name: "app_responsive",   //响应式
-     setup(){
-       let name1 = ref('张三')
-       let age = ref(11)
-       let sex = ref('男')
-       let job = reactive({
-         type: '前端',
-         company: '腾讯'
-       })
-       function delSex() {
-         sex.value = undefined
-       }
-       function addAddress() {
-         job.address = '西安'
-       }
-       function delAddress(){
-         delete job.address;
-       }
-       return{
-         name1,
-         age,
-         sex,
-         job,
-         delSex,
-         addAddress,
-         delAddress
-       }
-     }
-   }
-   ```
-
-   
-
-## 6.setup的两个注意点
-
-- setup执行的时机
-  - 在beforeCreate之前执行一次，this是undefined。
-
-- setup的参数
-  - props：值为对象，包含：组件外部传递过来，且组件内部声明接收了的属性。
-  - context：上下文对象
-    - attrs: 值为对象，包含：组件外部传递过来，但没有在props配置中声明的属性, 相当于 ```this.$attrs```。
-    - slots: 收到的插槽内容, 相当于 ```this.$slots```。
-    - emit: 分发自定义事件的函数, 相当于 ```this.$emit```。
-
-
-
-## 7.vue3组件通信
-
-> 生命周期钩子函数自定义事件
-
-  vue3的组件通信有四种
-
-1. props / emits
-2. provide / inject
-3. vuex全局缓存
-4. mixin局部混入
-
-
-
-### 7.1 props和emits
-
-+ Props：父组件传值子组件接受
-  Props：可以是数组也可以是对象
-  +  可以传递任何数据类型，函数，布尔，字符串等等等
-  + 可以根据需求传静态或者动值
-  + 可以对传递的值进行验证
-  +  可以设置默认值
-
-+ emits 子组件传值给父组件
-  +  子组件触发父组件自定义函数传入参数给父组件, 父组件调用函数得到子组件传来的值
-
-  
-
-### 7.2 provide / inject
-
-
-
-### 7.3 vuex全局缓存
-
-
-
-### 7.4 mixin局部混入
-
-
-
-
-
-### 7.5插槽
-
-+ 理解: 在子组件写一个插槽(挖一个坑 但是坑的内容等父组件来填充)
-
-+ 使用: 
-
-  + 默认插槽: 当子组件只有一个插槽时
-
-    ``` html
-    // 这是子组件部分
-    <slot>这里可以写插槽的默认值 即父组件没有使用的时候</slot>
-    // 这是父组件部分
-      <slots_test>
-        这里写的任何东西都可以被渲染到插槽中  只要是父组件作用域的所有都可以写 
-        <span>甚至可以使用变量如: {{value11}}</span>
-    	</slots_test>
-    ```
-
-     
-
-  + 命名插槽: 当子组件有多个插槽时
-
-    ``` html
-    // 这是子组件部分
-      <slot name="head"></slot>
-      <slot name="main"></slot>
-      <slot name="foot"></slot>
-    // 这是父组件部分
-      <slots_test>
-        <template v-slot:head>这是头</template>
-        <template v-slot:main>这是中</template>
-        <template v-slot:foot>这是下</template>
-    	</slots_test>
-    ```
-  
-  
-    + 作用域插槽: 可以用于子组件向父组件传输数据 
-  
-      ``` html
-      // 这是子组件部分
-        <span v-for="(item, index) in dataVal">
-          // 这里的子组件提供了一个data接口  供父组件使用
-          <slot :data="item" name="dataSlot"></slot>  
-          <br>
-        </span>
-      // 这是父组件部分
-        <slots_test>  // 这里父组件接收了data数据
-          <template v-slot:dataSlot="{data}">{{ data.name }}--{{ data.age }}		   		 			</template>
-      	</slots_test>
-      ```
-  
-      
-  
-    + 动态插槽名
-  
-      ``` html
-      // 这是子组件部分
-        <slot name="dySlot"></slot>
-      // 这是父组件部分  下面记得写dySlot的变量
-        <slots_test> // #是v-slot:的缩写
-          <template #[dySlot]>这是动态插槽名</template>
-      	</slots_test>
-      ```
-  
-      
-  
-
-
-
-
-
-
-### 7.6 代码实例 
-
-1. app.vue
-
-   ``` vue
-   <template>
-     <h1>app组件</h1>
-     <app_responsive></app_responsive>
-     <h1>---------组件间通信自定义事件---------------</h1>
-     <app_test :value1=value11 :value2=value12 @emitSon1="emitFather1" @emitSon2="emitFather2"></app_test>
-   
-   <h1>---------插槽---------------</h1>
-     <slots_test>
-       这里写的任何东西都可以被渲染到插槽中
-       <br>
-       <span>甚至可以使用变量如: {{value11}}</span>
-       <span>变量的做同于和父组件相同(当前) 子组件的内容一般不可以使用(除了通信之外)</span>
-       <template v-slot:head>这是头</template>
-       <template v-slot:main>这是中</template>
-       <template #foot>#是v-slot:的缩写  这是下</template>
-       <template v-slot:dataSlot="{data}">{{ data.name }}--{{ data.age }}</template>
-       <template #[dySlot]>这是动态插槽名</template>
-     </slots_test>
-   </template>
-   <script>
-   import app_responsive from './components/响应式增删改查数据.vue'
-   import app_test from './components/生命周期组件间通信自定义事件.vue'
-   import slots_test from  './components/插槽.vue'
-   import {reactive, ref, toRefs} from "vue";
-   export default { // vue3的形式
-     name: 'App',
-     components: {
-       app_responsive,
-       app_test,
-       slots_test,
-     },
-     setup() {
-       let dySlot = ref("dySlot")
-       let app_test_value = reactive(
-           {
-             value11: "props组件间通信动态绑定",
-             value12: "props组件间通信方法动态绑定"
-           }
-       )
-       function emitFather1(data) {
-         console.log('我收到子组件的数据了:',  data);
-   
-       }
-       function emitFather2(data) {
-         console.log('我收到子组件的数据了:',  data);
-       }
-       return {
-         ...toRefs(app_test_value),   // 结构化后 使用可以不写变量名.变量
-         emitFather1,
-         emitFather2,
-         dySlot
-       }
-   
-     },
-   }
-   </script>
-   <style>
-   #app {
-     font-family: Avenir, Helvetica, Arial, sans-serif;
-     -webkit-font-smoothing: antialiased;
-     -moz-osx-font-smoothing: grayscale;
-     text-align: center;
-     color: #2c3e50;
-     margin-top: 60px;
-   }
-   </style>
-   ```
-
-2. 生命周期组件间通信自定义事件
-
-   ``` vue
-   <template>
-     <ul>
-       <li v-show="value1">appName: {{ value1 }}</li>
-       <li v-show="value2">appFun: {{ value2 }}</li>
-       <li></li>
-     </ul>
-     <button @click="emitdiy1">emit给父组件传数据1</button>
-     <button @click="emitdiy2">emit给父组件传数据2</button>
-   </template>
-   <script>
-   import {getCurrentInstance, onMounted} from "vue";
-   export default {
-     name: 'app_test',
-     props: ['value1','value2'],
-     setup(props, emit) {
-       const {proxy} = getCurrentInstance();
-       function emitdiy1(data) {
-         proxy.$emit('emitSon1', '子组件数据1');
-       }
-       function emitdiy2(data) {
-         proxy.$emit('emitSon2', '子组件数据2');
-       }
-       onMounted(() => {  // 生命周期函数
-         console.log('我是子组件生命周期,我被挂载了');
-         // console.log(props);
-         // console.log(proxy);
-         // console.log(props.value1);    // 获取父组件传过来的值
-         // console.log(emit);
-       });
-       return {emitdiy1, emitdiy2}
-     },
-   }
-   </script>
-   <style scoped>
-   li {
-     list-style-type: none;
-   }
-   </style>
-   ```
-
-3. 插槽
-
-   ``` vue
-   <template>
-     <slot>这里可以写插槽的默认值 即父组件没有使用的时候</slot>
-     <span>当然也可以写好几个插槽 比如网页的头 中 下 部分 可以像下面这种使用</span>
-     <br>
-     <slot name="head"></slot>
-     <br>
-     <slot name="main"></slot>
-     <br>
-     <slot name="foot"></slot>
-     <br>
-     <span v-for="(item, index) in dataVal">
-       <slot :data="item" name="dataSlot"></slot>
-       <br>
-     </span>
-     <br>
-     <slot name="dySlot"></slot>
-   </template>
-   <script>
-   import {reactive, toRefs} from "vue";
-   export default {
-     name: 'slots_test',
-     setup() {
-       let dataVal = reactive([
-         {name: '张三', age: '18'},
-         {name: '李四', age: '19'},
-         {name: '王五', age: '20'},
-       ])
-       return {
-         ...toRefs(dataVal),dataVal
-       }
-     },
-   }
-   </script>
-   <style scoped>
-   </style>
-   ```
-   
-   
-
-## 7.计算属性与监视
-
-### 1.computed函数
-
-- 与Vue2.x中computed配置功能一致
-
-- 写法
-
-  ```js
-  import {computed} from 'vue'
-  
-  setup(){
-      ...
-  	//计算属性——简写
-      let fullName = computed(()=>{
-          return person.firstName + '-' + person.lastName
-      })
-      //计算属性——完整
-      let fullName = computed({
-          get(){
-              return person.firstName + '-' + person.lastName
-          },
-          set(value){
-              const nameArr = value.split('-')
-              person.firstName = nameArr[0]
-              person.lastName = nameArr[1]
-          }
-      })
-  }
-  ```
-
-### 2.watch函数
-
-- 与Vue2.x中watch配置功能一致
-
-- 两个小“坑”：
-
-  - 监视reactive定义的响应式数据时：oldValue无法正确获取、强制开启了深度监视（deep配置失效）。
-  - 监视reactive定义的响应式数据中某个属性时：deep配置有效。
-
-  ```js
-  //情况一：监视ref定义的响应式数据
-  watch(sum,(newValue,oldValue)=>{
-  	console.log('sum变化了',newValue,oldValue)
-  },{immediate:true})
-  
-  //情况二：监视多个ref定义的响应式数据
-  watch([sum,msg],(newValue,oldValue)=>{
-  	console.log('sum或msg变化了',newValue,oldValue)
-  }) 
-  
-  /* 情况三：监视reactive定义的响应式数据
-  			若watch监视的是reactive定义的响应式数据，则无法正确获得oldValue！！
-  			若watch监视的是reactive定义的响应式数据，则强制开启了深度监视 
-  */
-  watch(person,(newValue,oldValue)=>{
-  	console.log('person变化了',newValue,oldValue)
-  },{immediate:true,deep:false}) //此处的deep配置不再奏效
-  
-  //情况四：监视reactive定义的响应式数据中的某个属性
-  watch(()=>person.job,(newValue,oldValue)=>{
-  	console.log('person的job变化了',newValue,oldValue)
-  },{immediate:true,deep:true}) 
-  
-  //情况五：监视reactive定义的响应式数据中的某些属性
-  watch([()=>person.job,()=>person.name],(newValue,oldValue)=>{
-  	console.log('person的job变化了',newValue,oldValue)
-  },{immediate:true,deep:true})
-  
-  //特殊情况
-  watch(()=>person.job,(newValue,oldValue)=>{
-      console.log('person的job变化了',newValue,oldValue)
-  },{deep:true}) //此处由于监视的是reactive素定义的对象中的某个属性，所以deep配置有效
-  ```
-
-### 3.watchEffect函数
-
-- watch的套路是：既要指明监视的属性，也要指明监视的回调。
-
-- watchEffect的套路是：不用指明监视哪个属性，监视的回调中用到哪个属性，那就监视哪个属性。
-
-- watchEffect有点像computed：
-
-  - 但computed注重的计算出来的值（回调函数的返回值），所以必须要写返回值。
-  - 而watchEffect更注重的是过程（回调函数的函数体），所以不用写返回值。
-
-  ```js
-  //watchEffect所指定的回调中用到的数据只要发生变化，则直接重新执行回调。
-  watchEffect(()=>{
-      const x1 = sum.value
-      const x2 = person.age
-      console.log('watchEffect配置的回调执行了')
-  })
-  ```
-
-
-
-
-
-## 8.生命周期
-
-+ Vue2的生命周期
-
-<img src="https://tva1.sinaimg.cn/large/e6c9d24ely1h36r5atzhuj20u023zn2v.jpg" style="zoom:50%;" />
-
-
-
-+ Vue3生命周期
-
-  <img src="https://v3.cn.vuejs.org/images/lifecycle.svg" style="zoom:50%;" />
-
-
-
-
-
-- Vue3.0中可以继续使用Vue2.x中的生命周期钩子，但有有两个被更名：
-  - ```beforeDestroy```改名为 ```beforeUnmount```
-  - ```destroyed```改名为 ```unmounted```
-- Vue3.0也提供了 Composition API 形式的生命周期钩子，与Vue2.x中钩子对应关系如下：
-  - `beforeCreate`===>`setup()`
-  - `created`=======>`setup()`
-  - `beforeMount` ===>`onBeforeMount`
-  - `mounted`=======>`onMounted`
-  - `beforeUpdate`===>`onBeforeUpdate`
-  - `updated` =======>`onUpdated`
-  - `beforeUnmount` ==>`onBeforeUnmount`
-  - `unmounted` =====>`onUnmounted`
-
-## 9.自定义hook函数
-
-- 什么是hook？—— 本质是一个函数，把setup函数中使用的Composition API进行了封装。
-
-- 类似于vue2.x中的mixin。
-
-- 自定义hook的优势: 复用代码, 让setup中的逻辑更清楚易懂。
-
-
-
-+ 不使用hooks:
-
-  ``` js
-  // app组件
-  // 定义一个button联动下面的组件 控制隐藏和显示  (v-if)
-  
-  // vue组件
-  <template>
-  <span>当前鼠标点击的坐标为: x:{{point.x}} --  y:{{point.y}}</span>
-  </template>
-  
-  <script>
-  import { reactive, onMounted, onBeforeUnmount} from "vue";
-  export default {
-    name: "hooks_test",
-    setup() {
-  
-      // 实现鼠标获取鼠标点击的坐标
-      let point = reactive({
-        x: 0,
-        y: 0
-      })
-      function getPoint(e){
-        point.x = e.clientX
-        point.y = e.clientY
-        console.log( point.x, point.y)
-      }
-      onMounted(() => {   // 挂在时候触发
-        document.addEventListener('click', getPoint )
-      })
-      onBeforeUnmount(() => {   // 卸载时候触发
-        document.removeEventListener('click',getPoint)
-      })
-      return {point}
-    }
-  }
-  </script>
-  <style scoped>
-  </style>
-  ```
-
-  
-
-+ 使用hooks
-
-  单独将公共部分提取到一个新的js中 然后暴露出来即可  (一般在src/hooks下  命名为`useXXX.js`)
-
-  ``` js
-  // src/hooks/usePoint.js
-  import {onBeforeUnmount, onMounted, reactive} from "vue";
-  export default function (){
-      // 实现鼠标获取鼠标点击的坐标
-      let point = reactive({
-          x: 0,
-          y: 0
-      })
-      function getPoint(e){
-          point.x = e.clientX
-          point.y = e.clientY
-          console.log( point.x, point.y)
-      }
-      onMounted(() => {   // 挂在时候触发
-          document.addEventListener('click', getPoint )
-      })
-      onBeforeUnmount(() => {   // 卸载时候触发
-          document.removeEventListener('click',getPoint)
-      })
-      return point
-  }
-  
-  // hooks组件
-  <template>
-  <span>当前鼠标点击的坐标为: x:{{point.x}} --  y:{{point.y}}</span>
-  </template>
-  <script>
-  import { reactive, onMounted, onBeforeUnmount} from "vue";
-  import usePoint from "../hooks/usePoint";
-  export default {
-    name: "hooks_test",
-    setup() {
-      let point = usePoint();
-      return {point}
-    }
-  }
-  </script>
-  <style scoped>
-  </style>
-  
-  // App.vue代码和之前一样 不影响  创建一个按钮 点击控制组件隐藏显示即可
-  ```
-
-  
-
-## 10.toRef
-
-- 作用：创建一个 ref 对象，其value值指向另一个对象中的某个属性。
-- 语法：```const name = toRef(person,'name')```
-- 应用:   要将响应式对象中的某个属性单独提供给外部使用时。
-
-
-- 扩展：```toRefs``` 与```toRef```功能一致，但可以批量创建多个 ref 对象，语法：```toRefs(person)```
-
-
-
-# 其它 Composition API
-
-## 1.shallowReactive 与 shallowRef
-
-- shallowReactive：只处理对象最外层属性的响应式（浅响应式）。
-- shallowRef：只处理基本数据类型的响应式, 不进行对象的响应式处理。
-
-- 什么时候使用?
-  -  如果有一个对象数据，结构比较深, 但变化时只是外层属性变化 ===> shallowReactive。
-  -  如果有一个对象数据，后续功能不会修改该对象中的属性，而是生新的对象来替换 ===> shallowRef。
-
-## 2.readonly 与 shallowReadonly
-
-- readonly: 让一个响应式数据变为只读的（深只读）。
-- shallowReadonly：让一个响应式数据变为只读的（浅只读）。
-- 应用场景: 不希望数据被修改时。
-
-
-
-## 3.toRaw 与 markRaw
-
-- toRaw：
-  - 作用：将一个由```reactive```生成的<strong style="color:orange">响应式对象</strong>转为<strong style="color:orange">普通对象</strong>。
-  - 使用场景：用于读取响应式对象对应的普通对象，对这个普通对象的所有操作，不会引起页面更新。
-- markRaw：
-  - 作用：标记一个对象，使其永远不会再成为响应式对象。
-  - 应用场景:
-    1. 有些值不应被设置为响应式的，例如复杂的第三方类库等。
-    2. 当渲染具有不可变数据源的大列表时，跳过响应式转换可以提高性能。
-
-
-
-## 4.customRef
-
-- 作用：创建一个自定义的 ref，并对其依赖项跟踪和更新触发进行显式控制。
-
-- 实现防抖效果：
-
-  ```vue
-  <template>
-  	<input type="text" v-model="keyword">
-  	<h3>{{keyword}}</h3>
-  </template>
-  
-  <script>
-  	import {ref,customRef} from 'vue'
-  	export default {
-  		name:'Demo',
-  		setup(){
-  			// let keyword = ref('hello') //使用Vue准备好的内置ref
-  			//自定义一个myRef
-  			function myRef(value,delay){
-  				let timer
-  				//通过customRef去实现自定义
-  				return customRef((track,trigger)=>{
-  					return{
-  						get(){
-  							track() //告诉Vue这个value值是需要被“追踪”的
-  							return value
-  						},
-  						set(newValue){
-  							clearTimeout(timer)
-  							timer = setTimeout(()=>{
-  								value = newValue
-  								trigger() //告诉Vue去更新界面
-  							},delay)
-  						}
-  					}
-  				})
-  			}
-  			let keyword = myRef('hello',500) //使用程序员自定义的ref
-  			return {
-  				keyword
-  			}
-  		}
-  	}
-  </script>
-  ```
-
-
-
-
-## 5.provide 与 inject
-
-<img src="https://v3.cn.vuejs.org/images/components_provide.png" style="width:300px" />
-
-- 作用：实现<strong style="color:#DD5145">祖与后代组件间</strong>通信
-
-- 套路：父组件有一个 `provide` 选项来提供数据，后代组件有一个 `inject` 选项来开始使用这些数据
-
-- 具体写法：
-
-  1. 祖组件中：
-
-     ```js
-     setup(){
-     	......
-         let car = reactive({name:'奔驰',price:'40万'})
-         provide('car',car)
-         ......
-     }
-     ```
-
-  2. 后代组件中：
-
-     ```js
-     setup(props,context){
-     	......
-         const car = inject('car')
-         return {car}
-     	......
-     }
-     ```
-
-## 6.响应式数据的判断
-
-- isRef: 检查一个值是否为一个 ref 对象
-- isReactive: 检查一个对象是否是由 `reactive` 创建的响应式代理
-- isReadonly: 检查一个对象是否是由 `readonly` 创建的只读代理
-- isProxy: 检查一个对象是否是由 `reactive` 或者 `readonly` 方法创建的代理
-
-
-
-
-
-# 新的组件
-
-## 1.Fragment
-
-- 在Vue2中: 组件必须有一个根标签
-- 在Vue3中: 组件可以没有根标签, 内部会将多个标签包含在一个Fragment虚拟元素中
-- 好处: 减少标签层级, 减小内存占用
-
-## 2.Teleport
-
-> 使得子组件的样式定位等等不必参照父元素 可以指定标签进行参照
-
-- 什么是Teleport？—— `Teleport` 是一种能够将我们的<strong style="color:#DD5145">组件html结构</strong>移动到指定位置的技术。
-
-  ```vue
-  // app.vue 或者父组件 正常引入和展示在页面就行
-  
-  // 子组件代码
-  <template>
-    <button @click="isShow = true">点我显示弹窗</button>
-    <teleport to="body">
-    <div  v-if="isShow" class = "mask">
-      <div class = "dialog">
-        <h3>Teleport自定义组件位置</h3>
-        <h4>注意这个居中不是通过app.vue进行控制的 而是由当前组件进行控制的</h4>
-        <button @click="isShow = false">点我关闭弹窗</button>
-      </div>
-    </div>
-    </teleport>
-  
-  </template>
-  
-  <script>
-  import {ref} from "vue";
-  export default {
-    name: "Dialog",
-    setup(){
-      let isShow = ref(false)
-      return {isShow}
-    }
-  
-  }
-  </script>
-  
-  <style scoped>
-  
-  .mask{
-    position: fixed;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(0,0,0,0.5);
-  }
-  .dialog{
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%,-50%);
-    text-align: center;
-    width: 300px;
-    height: 300px;
-    background: #fff;
-  }
-  </style>
-  ```
-
-
-
-## 3.Suspense
-
-- 等待异步组件时渲染一些额外内容，让应用有更好的用户体验
-
-- 使用步骤：
-
-  - 异步引入组件
-
-    ```js
-    import {defineAsyncComponent} from 'vue'
-    const Child = defineAsyncComponent(()=>import('./components/Child.vue'))
-    ```
-
-  - 使用```Suspense```包裹组件，并配置好```default``` 与 ```fallback```
-
-    ```vue
-    <template>
-    	<div class="app">
-    		<h3>我是App组件</h3>
-    		<Suspense>
-    			<template v-slot:default>
-    				<Child/>
-    			</template>
-    			<template v-slot:fallback>
-    				<h3>加载中.....</h3>
-    			</template>
-    		</Suspense>
-    	</div>
-    </template>
-    ```
-
-# 其他
-
-## 1.全局API的转移
-
-- Vue 2.x 有许多全局 API 和配置。
-
-  - 例如：注册全局组件、注册全局指令等。
-
-    ```js
-    //注册全局组件
-    Vue.component('MyButton', {
-      data: () => ({
-        count: 0
-      }),
-      template: '<button @click="count++">Clicked {{ count }} times.</button>'
-    })
-    
-    //注册全局指令
-    Vue.directive('focus', {
-      inserted: el => el.focus()
-    }
-    ```
-
-- Vue3.0中对这些API做出了调整：
-
-  - 将全局的API，即：```Vue.xxx```调整到应用实例（```app```）上
-
-    | 2.x 全局 API（```Vue```） | 3.x 实例 API (`app`)                        |
-    | ------------------------- | ------------------------------------------- |
-    | Vue.config.xxxx           | app.config.xxxx                             |
-    | Vue.config.productionTip  | <strong style="color:#DD5145">移除</strong> |
-    | Vue.component             | app.component                               |
-    | Vue.directive             | app.directive                               |
-    | Vue.mixin                 | app.mixin                                   |
-    | Vue.use                   | app.use                                     |
-    | Vue.prototype             | app.config.globalProperties                 |
-
-## 2.其他改变
-
-- data选项应始终被声明为一个函数。
-
-- 过度类名的更改：
-
-  - Vue2.x写法
-
-    ```css
-    .v-enter,
-    .v-leave-to {
-      opacity: 0;
-    }
-    .v-leave,
-    .v-enter-to {
-      opacity: 1;
-    }
-    ```
-
-  - Vue3.x写法
-
-    ```css
-    .v-enter-from,
-    .v-leave-to {
-      opacity: 0;
-    }
-    
-    .v-leave-from,
-    .v-enter-to {
-      opacity: 1;
-    }
-    ```
-
-- <strong style="color:#DD5145">移除</strong>keyCode作为 v-on 的修饰符，同时也不再支持```config.keyCodes```
-
-- <strong style="color:#DD5145">移除</strong>```v-on.native```修饰符
-
-  - 父组件中绑定事件
-
-    ```vue
-    <my-component
-      v-on:close="handleComponentEvent"
-      v-on:click="handleNativeClickEvent"
-    />
-    ```
-
-  - 子组件中声明自定义事件
-
-    ```vue
-    <script>
-      export default {
-        emits: ['close']
-      }
-    </script>
-    ```
-
-- <strong style="color:#DD5145">移除</strong>过滤器（filter）
-
-  > 过滤器虽然这看起来很方便，但它需要一个自定义语法，打破大括号内表达式是 “只是 JavaScript” 的假设，这不仅有学习成本，而且有实现成本！建议用方法调用或计算属性去替换过滤器。
-
-- ......
-
-
-
-# 路由
-
-## 入门不使用(脚手架)
-
-### router-link
-
-请注意，我们没有使用常规的 `a` 标签，而是使用一个自定义组件 `router-link` 来创建链接。这使得 Vue Router 可以在不重新加载页面的情况下更改 URL，处理 URL 的生成以及编码。我们将在后面看到如何从这些功能中获益。
-
-### router-view
-
-`router-view` 将显示与 url 对应的组件。你可以把它放在任何地方，以适应你的布局。
-
-### 代码实例:
-
-``` html
-<!DOCTYPE html>
-<html lang="">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <link rel="icon" href="<%= BASE_URL %>favicon.ico">
-    <title><%= htmlWebpackPlugin.options.title %></title>
-      <script src="https://unpkg.com/vue@3"></script>
-      <script src="https://unpkg.com/vue-router@4"></script>
-  </head>
-  <body>
-  <div id="app">
-      <h1>Hello App!</h1>
-      <p>
-          <!--使用 router-link 组件进行导航 -->
-          <!--通过传递 `to` 来指定链接 -->
-          <!--`<router-link>` 将呈现一个带有正确 `href` 属性的 `<a>` 标签-->
-          <router-link to="/">Go to Home</router-link>
-          <br>
-          <router-link to="/about">Go to About</router-link>
-          <br>
-<!--          <router-link to="/">Go to Baidu</router-link>-->
-      </p>
-      <!-- 路由出口 -->
-      <!-- 路由匹配到的组件将渲染在这里 -->
-      <router-view />
-  </div>
-  </body>
-<script>
-    // 1. 定义路由组件.
-    // 也可以从其他文件导入
-    const Home = { template: '<div>Home</div>' }
-    const About = { template: '<div>About</div>' }
-
-    // 2. 定义一些路由
-    // 每个路由都需要映射到一个组件。
-    // 我们后面再讨论嵌套路由。
-    const routes = [
-        { path: '/', component: Home },
-        { path: '/about', component: About },
-    ]
-    // 3. 创建路由实例并传递 `routes` 配置
-    // 你可以在这里输入更多的配置，但我们在这里
-    // 暂时保持简单
-    const router = VueRouter.createRouter({
-        // 4. 内部提供了 history 模式的实现。为了简单起见，我们在这里使用 hash 模式。
-        history: VueRouter.createWebHashHistory(),
-        routes, // `routes: routes` 的缩写
-    })
-    // 5. 创建并挂载根实例
-    const app = Vue.createApp({})
-    //确保 _use_ 路由实例使
-    //整个应用支持路由。
-    app.use(router)
-    app.mount('#app')
-    // 现在，应用已经启动
-</script>
-</html>
-```
-
-
-
-## 入门(使用vue-cli)
-
-+ 安装项目时候可以选择自定义安装 
-
-  + 安装router插件
-  + 不使用history
-
-+ 安装后使用 router插件
-
-  + main.js
-
-    ``` js
-    import { createApp } from 'vue'
-    import App from './App.vue'
-    import router from './router'
-    createApp(App).use(router).mount('#app')
-    ```
-
-  + package.json
-
-    ``` json
-      "dependencies": {
-        "core-js": "^3.8.3",
-        "vue": "^3.2.13",
-        "vue-router": "^4.0.3"
-      },
-    ```
-
-  + 新建`src/router/index.js`
-
-    ``` js
-    import { createRouter, createWebHashHistory } from 'vue-router'
-    import HomeView from '../views/HomeView.vue'
-    const routes = [
-      {
-        path: '/',
-        name: 'home',
-        component: HomeView
-      },
-      {
-        path: '/about',
-        name: 'about',
-          // 懒加载 异步加载  可以有也可以没有 
-        component: () => import('../views/AboutView.vue')
-      }
-    ]
-    const router = createRouter({
-      history: createWebHashHistory(),
-      routes
-    })
-    export default router
-    ```
-    
-  + 在index.js声明的地方写两个vue文件即可  about和home
-
-  + App.vue
-  
-    ``` vue
-    <template>
-    <!-- router-link 仅仅负责跳转 类似a标签 -->
-        <router-link to="/">Home</router-link> |
-        <router-link to="/about">About</router-link>
-    <!-- router-view  负责展示当前路由对应组件的内容  -->
-      <router-view/>
-    </template>
-    ```
-  
-     
-
-
-
-## 守卫路由
-
+ 

@@ -1021,6 +1021,38 @@ RequestParam可以接受简单类型的属性，也可以接受对象类型。
 
 
 
+##  @RequestPart
+
+@RequestPart这个注解用在multipart/form-data表单提交请求的方法上，
+
+主要用来搭配springboot接收MultipartFile类型的文件。
+由于RequestPart是基于表单提交的，那么就可以通过表单来接收另一个DTO类，从而避免了通过RequestParam一个一个接收变量。
+
+    @PostMapping("XXX")
+    // 可以接收多文件
+    public 返回的类 pushCar(@RequestPart @Valid final XXXDTO xXXDTO, @RequestPart("filenames") List<MultipartFile> files) {
+    	//处理逻辑
+        return 返回的类的实例;
+    }```
+
+
+
+
+
+## @Valid
+
+用于校验参数是否合法  一般搭配`BindingResult`使用  这个参数用来存放校验的结果
+
+``` java
+public Result insert(@RequestBody @Valid SysRoleVo sysRoleVo, BindingResult result) {
+  if (result.hasErrors()) {   //结果出错了
+    String msg = Objects.requireNonNull(result.getFieldError()).getDefaultMessage();
+    throw new RRException(msg);
+  }
+```
+
+
+
 # @JsonFormat
 
 在你需要查询出来的时间的数据库字段对应的实体类的属性上添加@JsonFormat
@@ -1052,11 +1084,371 @@ private Date systemTime;
 
 
 
+# @Api(Swagger)
+
+@Api是Swagger的注解。修饰整个类，描述 Controller 的作用
+
+`@Api(value = "系统用户管理", tags = "系统用户管理")`
+
+这个注解有两个参数：value、tags
+
+- tags：说明该类的作用，可以在UI界面上看到
+- value: 说明该类作用，但在UI界面上看不到
 
 
 
 
 
+# @ApiOperation(Swagger)
+
+作用于**方法**描述一个类的一个方法，或者说一个接口
+
+``` java
+@ResponseBody
+@PostMapping(value="/login")
+@ApiOperation(value = "登录检测", notes="根据用户名、密码判断该用户是否存在")
+public UserModel login(@RequestParam(value = "name", required = false) String account,
+@RequestParam(value = "pass", required = false) String password){}
+```
 
 
 
+常用的参数:
+
+- value=”说明方法的用途、作用”
+- notes=”方法的备注说明” 其他参数：
+- tags 操作标签，非空时将覆盖value的值
+
+不常用的参数:
+
+- response 响应类型（即返回对象）
+- responseContainer 声明包装的响应容器（返回对象类型）。有效值为 “List”, “Set” or “Map”。
+- responseReference 指定对响应类型的引用。将覆盖任何指定的response（）类
+- httpMethod 指定HTTP方法，”GET”, “HEAD”, “POST”, “PUT”, “DELETE”, “OPTIONS” and “PATCH”
+- position 如果配置多个Api 想改变显示的顺序位置，在1.5版本后不再支持
+- nickname 第三方工具唯一标识，默认为空
+- produces 设置MIME类型列表（output），例：”application/json, application/xml”，默认为空
+- consumes 设置MIME类型列表（input），例：”application/json, application/xml”，默认为空
+- protocols 设置特定协议，例：http， https， ws， wss。
+- authorizations 获取授权列表（安全声明），如果未设置，则返回一个空的授权值。
+- hidden 默认为false， 配置为true 将在文档中隐藏
+- responseHeaders 响应头列表
+- code 响应的HTTP状态代码。默认 200
+
+
+
+# @ApiModel(Swagger)
+
+作用于类上  响应类上
+
+说明：用于响应类上，表示一个返回响应数据的信息（这种一般用在 POST 创建的时候，使用 @RequestBody 这样的场景，请求参数无法使用 @ApiImplicitParam 注解进行描述的时候）
+
+value值 显示在ui上
+
+``` java
+@ApiModel(value="用户登录信息", description="用于判断用户是否存在")
+public class UserModel implements Serializable{
+```
+
+
+
+# @ApiModelProperty((Swagger))
+
+用在属性上，描述响应类的属性
+
+``` java
+@ApiModelProperty(value = "主键",name = "id",
+                  allowableValues = "32",
+                  access = "1",
+                  notes = "用户的id",
+                  dataType = "int",
+                  required = false,
+                  position = 1,
+                  hidden = true,
+                  example = "1",
+                  readOnly = false,
+                  reference = "id",
+                  allowEmptyValue = false)
+@TableId(value = "id",type = IdType.AUTO)
+private int id;
+```
+
+
+
+参数:
+
+其他参数(@ApiModelProperty)：
+
+- value 此属性的简要说明。
+- name 允许覆盖属性名称
+- allowableValues 限制参数的可接受值。1.以逗号分隔的列表 2.范围值 3.设置最小值/最大值
+- access 允许从 API 文档中过滤属性。
+- notes 目前尚未使用。
+- dataType 参数的数据类型。可以是类名或者参数名，会覆盖类的属性名称。
+- required 参数是否必传，默认为 false
+- position 允许在类中对属性进行排序。默认为 0
+- hidden 允许在 Swagger 模型定义中隐藏该属性。
+- example 属性的示例。
+- readOnly 将属性设定为只读。
+- reference 指定对相应类型定义的引用，覆盖指定的任何参数值
+
+
+
+
+
+# @ApiImplicitParams(Swagger)
+
+不常用 
+
+作用于  **请求的方法上** 表示一组参数说明；@ApiImplicitParam：用在 @ApiImplicitParams 注解中，指定一个请求参数的各个方面
+
+``` java
+@ResponseBody
+@PostMapping(value="/login")
+@ApiOperation(value = "登录检测", notes="根据用户名、密码判断该用户是否存在")
+@ApiImplicitParams({
+  @ApiImplicitParam(name = "name", value = "用户名", required = false, paramType = "query", dataType = "String"),
+  @ApiImplicitParam(name = "pass", value = "密码", required = false, paramType = "query", dataType = "String")
+})
+public UserModel login(@RequestParam(value = "name", required = false) String account,
+@RequestParam(value = "pass", required = false) String password){}
+```
+
+
+
+参数：
+
+- name：参数名，参数名称可以覆盖方法参数名称，路径参数必须与方法参数一致
+- value：参数的汉字说明、解释
+- required：参数是否必须传，默认为 false （路径参数必填）
+- paramType：参数放在哪个地方
+- header 请求参数的获取：@RequestHeader
+- query 请求参数的获取：@RequestParam
+- path（用于 restful 接口）–> 请求参数的获取：@PathVariable
+- body（不常用）
+- form（不常用）
+- dataType：参数类型，默认 String，其它值 dataType=”Integer”
+- defaultValue：参数的默认值 其他参数（@ApiImplicitParam）：
+- allowableValues 限制参数的可接受值。1.以逗号分隔的列表 2.范围值 3.设置最小值/最大值
+- access 允许从API文档中过滤参数。
+- allowMultiple 指定参数是否可以通过具有多个事件接受多个值，默认为 false
+- example 单个示例
+- examples 参数示例。仅适用于 BodyParameters
+
+
+
+# @ApiResponses(Swagger)
+
+说明：用在请求的方法上，表示一组响应；@ApiResponse：用在 @ApiResponses 中，一般用于表达一个错误的响应信息
+
+``` java
+@ResponseBody
+@PostMapping(value="/update/{id}")
+@ApiOperation(value = "修改用户信息",notes = "打开页面并修改指定用户信息")
+@ApiResponses({
+    @ApiResponse(code=400,message="请求参数没填好"),
+    @ApiResponse(code=404,message="请求路径没有或页面跳转路径不对")
+})
+public JsonResult update(@PathVariable String id, UserModel model){}
+```
+
+
+
+常用参数：
+
+- code：数字，例如 400
+- message：信息，例如 “请求参数没填好”
+- response：抛出异常的类
+
+
+
+# @ApiParam(Swagger)
+
+说明：用在请求方法中，描述参数信息
+
+常用参数：
+
+- name：参数名称，参数名称可以覆盖方法参数名称，路径参数必须与方法参数一致
+
+- value：参数的简要说明。
+
+- defaultValue：参数默认值
+
+- required：属性是否必填，默认为 false （路径参数必须填） 以实体类为参数：
+
+   ``` java
+   @ResponseBody
+   @PostMapping(value="/login")
+   @ApiOperation(value = "登录检测", notes="根据用户名、密码判断该用户是否存在")
+   public UserModel login(@ApiParam(name = "model", value = "用户信息Model") UserModel model){}
+   ```
+
+  
+
+  其他参数：
+
+- allowableValues 限制参数的可接受值。1.以逗号分隔的列表 2.范围值 3.设置最小值/最大值
+
+- access 允许从 API 文档中过滤参数。
+
+- allowMultiple 指定参数是否可以通过具有多个事件接受多个值，默认为 false
+
+- hidden 隐藏参数列表中的参数。
+
+- example 单个示例
+
+- examples 参数示例。仅适用于 BodyParameters
+
+  ``` java
+  @ResponseBody
+  @PostMapping(value="/login")
+  @ApiOperation(value = "登录检测", notes="根据用户名、密码判断该用户是否存在")
+  public UserModel login(@ApiParam(name = "name", value = "用户名", required = false) @RequestParam(value = "name", required = false) String account,
+    @ApiParam(name = "pass", value = "密码", required = false) @RequestParam(value = "pass", required = false) String password){}
+  ```
+
+  
+
+# @PostConstruct
+
+作用:  用于spring容器启动时 从数据库加载配置文件 
+
+  假设类UserController有个成员变量UserService被@Autowired修饰，那么UserService的注入是在UserController的构造方法之后执行的。
+
+  如果想在UserController对象生成时候完成某些初始化操作，而偏偏这些初始化操作又依赖于依赖注入的对象，那么就无法在构造函数中实现（ps：spring启动时初始化异常），例如：
+
+```java
+public class UserController {
+	@Autowired
+  private UserService userService;
+  public UserController() {
+    // 调用userService的自定义初始化方法，此时userService为null，报错
+    userService.userServiceInit();
+  }
+}
+```
+
+​        因此，可以使用@PostConstruct注解来完成初始化，@PostConstruct注解的方法将会在UserService注入完成后被自动调用。
+
+```java
+public class UserController {
+	@Autowired
+	private UserService userService;
+  public UserController() {
+  }
+  // 初始化方法
+  @PostConstruct
+  public void init(){
+    userService.userServiceInit();
+  }
+}
+```
+
+  总结：类初始化调用顺序：
+
+构造方法Constructor -> @Autowired -> @PostConstruct
+
+
+
+**数据库中加载配置文件注入到全局map中 完整版配置:** 
+
+> 这里还加了定时任务 定时注解看下面
+
+``` java
+@Component
+public class InitParameter {
+    public static Map<String, String> paramsMap = new HashMap<String, String>();
+    @Autowired
+    private SysParamsMapper sysParamsMapper;
+    @PostConstruct
+    public void init() {
+        sysParamsMapper.pageQuery(null).forEach(sysParamsVo -> {
+            paramsMap.put(sysParamsVo.getKey(), sysParamsVo.getValue());
+        });
+    }
+    @PreDestroy
+    public void destroy() {
+        //系统运行结束
+    }
+    @Scheduled(cron = "0 0 1 * * ?")
+    public void testOne() {
+        init();
+    }
+}
+```
+
+
+
+# @Scheduled:
+
+用于方法上: 配合一些参数完成 定时计划
+
+参数:
+
+1. cron
+
+   该参数接收一个cron[表达式](https://so.csdn.net/so/search?q=表达式&spm=1001.2101.3001.7020)，cron表达式是一个字符串，字符串以5或6个空格隔开，分开共6或7个域，每一个域代表一个含义。
+
+   cron表达式语法
+
+   [秒] [分] [小时] [日] [月] [周] [年]
+
+   注：[年]不是必须的域，可以省略[年]，则一共6个域
+
+   示例
+
+   每隔5秒执行一次：*/5 * * * * ?
+
+   每隔1分钟执行一次：0 */1 * * * ?
+
+   每天23点执行一次：0 0 23 * * ?
+
+   每天凌晨1点执行一次：0 0 1 * * ?
+
+   每月1号凌晨1点执行一次：0 0 1 1 * ?
+
+   每月最后一天23点执行一次：0 0 23 L * ?
+
+   每周星期天凌晨1点实行一次：0 0 1 ? * L
+
+   在26分、29分、33分执行一次：0 26,29,33 * * * ?
+
+   每天的0点、13点、18点、21点都执行一次：0 0 0,13,18,21 * * ?
+
+   | 序号 | 说明 | 必填 | 允许填写的值   | 允许的通配符  |
+   | ---- | ---- | ---- | -------------- | ------------- |
+   | 1    | 秒   | 是   | 0-59           | , - * /       |
+   | 2    | 分   | 是   | 0-59           | , - * /       |
+   | 3    | 时   | 是   | 0-23           | , - * /       |
+   | 4    | 日   | 是   | 1-31           | , - * /       |
+   | 5    | 月   | 是   | 1-12 / JAN-DEC | , - * ? / L W |
+   | 6    | 周   | 是   | 1-7 or SUN-SAT | , - * ? / L # |
+   | 7    | 年   | 否   | 1970-2099      | , - * /       |
+
+2. zone
+  时区，接收一个java.util.TimeZone#ID。cron表达式会基于该时区解析。默认是一个空字符串，即取服务器所在地的时区。比如我们一般使用的时区Asia/Shanghai。该字段我们一般留空。
+
+3. fixedDelay
+  上一次执行完毕时间点之后多长时间再执行。如：
+
+  `@Scheduled(fixedDelay = 5000) //上一次执行完毕时间点之后5秒再执行`
+
+4. fixedDelayString
+  与 3. fixedDelay 意思相同，只是使用字符串的形式。唯一不同的是支持占位符。如：
+
+  `@Scheduled(fixedDelayString = "5000") //上一次执行完毕时间点之后5秒再执行`
+
+  占位符的使用(配置文件中有配置：time.fixedDelay=5000)：
+
+  ``` java
+  @Scheduled(fixedDelayString = "${time.fixedDelay}")
+      void testFixedDelayString() {
+          System.out.println("Execute at " + System.currentTimeMillis());
+      }
+  ```
+
+  
+
+# @EnableScheduling:
+
+用于启动类上: 开启定时任务

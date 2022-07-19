@@ -1,8 +1,6 @@
-### Example user template template
-### Example user template
-
-# IntelliJ project files
-.idea
-*.iml
-out
-gen
+.DS_Store
+.idea/.gitignore
+.idea/MarkdownFile.iml
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml

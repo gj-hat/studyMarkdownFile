@@ -1426,15 +1426,15 @@ public class InitParameter {
    | 7    | 年   | 否   | 1970-2099      | , - * /       |
 
 2. zone
-  时区，接收一个java.util.TimeZone#ID。cron表达式会基于该时区解析。默认是一个空字符串，即取服务器所在地的时区。比如我们一般使用的时区Asia/Shanghai。该字段我们一般留空。
+    时区，接收一个java.util.TimeZone#ID。cron表达式会基于该时区解析。默认是一个空字符串，即取服务器所在地的时区。比如我们一般使用的时区Asia/Shanghai。该字段我们一般留空。
 
 3. fixedDelay
-  上一次执行完毕时间点之后多长时间再执行。如：
+    上一次执行完毕时间点之后多长时间再执行。如：
 
   `@Scheduled(fixedDelay = 5000) //上一次执行完毕时间点之后5秒再执行`
 
 4. fixedDelayString
-  与 3. fixedDelay 意思相同，只是使用字符串的形式。唯一不同的是支持占位符。如：
+    与 3. fixedDelay 意思相同，只是使用字符串的形式。唯一不同的是支持占位符。如：
 
   `@Scheduled(fixedDelayString = "5000") //上一次执行完毕时间点之后5秒再执行`
 

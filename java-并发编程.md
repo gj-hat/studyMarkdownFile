@@ -289,6 +289,193 @@ public class ThreadLocalsTest {
 
 
 
+## 07_AQS测试1
+
+1. CountDownLatch直接实现AQS
+2. ReentrantLock内部有一个Sync 实现了AQS
+3. ReentrantLock同步控制器 保证正确的结果
+
+
+
+``` java
+public class AQStest1 {
+    private static int total = 0;
+  	// 基于AQS的一个锁  其实不用他的话 也可以使用 Synchronized
+    private static ReentrantLock lock = new ReentrantLock();
+    public static void main(String[] args) throws InterruptedException {
+				//  这个是AQS的实现
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        for (int i = 0; i < 100; i++) {
+            new Thread(() -> {
+                try {
+                    countDownLatch.await();   // 单纯创建线程，不会执行下面的代码
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                for (int j = 0; j < 100; j++) {
+                    lock.lock();  // 使用 ReentrantLock加锁
+                    total++;
+                    lock.unlock(); // 使用 ReentrantLock解锁
+                }
+            }).start();
+        }
+        countDownLatch.countDown();  // 唤醒所有线程
+        Thread.sleep(1000);  // 10000
+        System.out.println(total);
+    }
+}
+```
+
+
+
+## 08_公平和飞公平锁实现
+
+``` java
+// ------------------------------公平锁的 lock 方法： -----------------
+static final class FairSync extends Sync {
+    final void lock() {
+        acquire(1);
+    }
+    // AbstractQueuedSynchronizer.acquire(int arg)
+    public final void acquire(int arg) {
+        if (!tryAcquire(arg) &&
+            acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
+            selfInterrupt();
+    }
+    protected final boolean tryAcquire(int acquires) {
+        final Thread current = Thread.currentThread();
+        int c = getState();
+        if (c == 0) {
+            // 1\. 和非公平锁相比，这里多了一个判断：是否有线程在等待
+            if (!hasQueuedPredecessors() &&
+                compareAndSetState(0, acquires)) {
+                setExclusiveOwnerThread(current);
+                return true;
+            }
+        }
+        else if (current == getExclusiveOwnerThread()) {
+            int nextc = c + acquires;
+            if (nextc < 0)
+                throw new Error("Maximum lock count exceeded");
+            setState(nextc);
+            return true;
+        }
+        return false;
+    }
+}
+// ------------------------------非公平锁的 lock 方法： -----------------
+static final class NonfairSync extends Sync {
+    final void lock() {
+        // 2\. 和公平锁相比，这里会直接先进行一次CAS，成功就返回了
+        if (compareAndSetState(0, 1))
+            setExclusiveOwnerThread(Thread.currentThread());
+        else
+            acquire(1);
+    }
+    // AbstractQueuedSynchronizer.acquire(int arg)
+    public final void acquire(int arg) {
+        if (!tryAcquire(arg) &&
+            acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
+            selfInterrupt();
+    }
+    protected final boolean tryAcquire(int acquires) {
+        return nonfairTryAcquire(acquires);
+    }
+}
+/**
+ * Performs non-fair tryLock.  tryAcquire is implemented in
+ * subclasses, but both need nonfair try for trylock method.
+ */
+final boolean nonfairTryAcquire(int acquires) {
+    final Thread current = Thread.currentThread();
+    int c = getState();
+    if (c == 0) {
+        // 这里没有对阻塞队列进行判断
+        if (compareAndSetState(0, acquires)) {
+            setExclusiveOwnerThread(current);
+            return true;
+        }
+    }
+    else if (current == getExclusiveOwnerThread()) {
+        int nextc = c + acquires;
+        if (nextc < 0) // overflow
+            throw new Error("Maximum lock count exceeded");
+        setState(nextc);
+        return true;
+    }
+    return false;
+}
+```
+
+总结在下面`14.3`
+
+
+
+## 09_多线程和线程池对比
+
+
+
+``` java
+public class ThreadTest1 {
+    public static void main(String[] args) throws InterruptedException {
+        threadTest();  //  18756ms
+        System.out.println("-----------------------");
+        threadPoolTest(); // 10ms
+    }
+    // 多线程测试
+    public static void threadTest() throws InterruptedException {
+        long l = System.currentTimeMillis();
+        final Random random = new Random();
+        final List<Integer> list = new ArrayList<>();
+        for (int i = 0; i < 10000; i++) {
+            Thread thread = new Thread(){
+                @Override
+                public void run() {
+                    list.add(random.nextInt());
+                }
+            };
+            thread.start();
+            thread.join();   // 一直等待线程执行完 再执行下面的 
+        }
+        System.out.println(System.currentTimeMillis()-l);
+        System.out.println(list.size());
+    }
+    // 线程池测试
+    public static void threadPoolTest() throws InterruptedException {
+        long l = System.currentTimeMillis();
+        final Random random = new Random();
+        final List<Integer> list = new ArrayList<>();
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        for (int i = 0; i < 10000; i++) {
+            executorService.execute(
+                    new Runnable() {
+                        @Override
+                        public void run() {
+                            list.add(random.nextInt());
+                        }
+                    }
+            );
+        }
+        executorService.shutdown();
+        executorService.awaitTermination(1, TimeUnit.DAYS);  // 等待上面的100000线程执行一天,一天内没执行完 就直接开始执行下面的代码  线程后台一直运行
+        System.out.println(System.currentTimeMillis()-l);
+        System.out.println(list.size());
+    }
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -299,15 +486,15 @@ public class ThreadLocalsTest {
 
 底层使用了操作系统的Lock实现的  使用C++实现的
 
-1. 保证可见性 一个线程修改了主内存的值 其他现成立刻就能看到
+1. **保证可见性** 一个线程修改了主内存的值 其他现成立刻就能看到
 
    当写线程写一个volatile变量时，JMM会把该线程对应的本地工作内存中的共享变量值刷新到主内存。当读线程读一个volatile变量时，JMM会把该线程对应的本地工作内存置为无效，线程将到主内存中重新读取共享变量。
 
-2. 保证有序性(禁止指令[重排序])  内存屏障 `上述代码02的解决部分`
+2. **保证有序性(**禁止指令[重排序])  内存屏障 `上述代码02的解决部分`
 
    volatile有序性的保证就是通过禁止指令重排序来实现的。指令重排序包括编译器和处理器重排序，JMM会分别限制这两种指令重排序。
 
-3. 不保证[原子性]
+3. **不保证[原子性]**
 
    **volatile是不能保证原子性的，即执行过程中是可以被其他线程打断甚至是加塞的。**
 
@@ -317,9 +504,17 @@ public class ThreadLocalsTest {
 
 
 
-### 1.1 关于上述代码01的解释
+### 1.1 关于上述代码01的解释(内存穿透)
 
 ![](https://tva1.sinaimg.cn/large/e6c9d24ely1h4zq9k8hm2j21m20u00yk.jpg)
+
+
+
+### 1.2 代码02指令重排
+
+
+
+
 
 
 
@@ -343,12 +538,12 @@ public class ThreadLocalsTest {
 
 Java虚拟机会在`volatile`修饰的变量前后增加一些内存屏障 实例如下
 ``` java
-StoreStore  // 写屏障
-  a = 1;   // Volatile写  给变量a写(刷新数据时候)  之前写屏障 之后读写屏障
-SotreLoad   // 写度屏障
+StoreStore  // 写屏障  之前的数据立即写入到内存中 之前的的操作优先级大于后面所有的操作
+  a = 1;   // Volatile写  给变量a写(刷新数据时候)   
+SotreLoad   // 写读屏障  前面的写操作要先结束了  才会执行后面的读操作
   b = a;   // Volatile读   读取a的值   后面加读读屏障 和 读写屏障
-LoadLoad    // 读读
-LoadStore   // 读写
+LoadLoad    // 读读    前面读的操作优先级高于后面读的操作
+LoadStore   // 读写    前面读的操作优先级高于后面写的操作
 ```
 
 内存屏障底层使用到汇编语言`Lock`前缀锁机制
@@ -357,7 +552,9 @@ LoadStore   // 读写
 
 ## 02_JMM的8大原子操作
 
-用于JMM的  主内存和工作内存的交互操作
+"原子操作(atomic operation)是不需要synchronized"，这是多线程编程的老生常谈了。所谓原子操作是指不会被`线程调度`机制打断的操作；这种操作一旦开始，就一直运行到结束，中间不会有任何切换到另一个线程。
+
+用于JMM的  主内存和工作内存的交互操作  上面的内存屏障使用到了原子操作
 
 1. **lock(锁定)**：作用于主内存的变量，它把一个变量标识为一条线程独占的状态。
 2. **unlock(解锁)**:作用于主内存的变量，它把一个处于锁定状态的变量释放出来，释放后的变量 才可以被其他线程锁定。
@@ -367,6 +564,10 @@ LoadStore   // 读写
 6. **assign(赋值)**:作用于工作内存的变量，它把一个从执行引擎接收的值赋给工作内存的变量， 每当虚拟机遇到一个给变量赋值的字节码指令时执行这个操作。
 7. **store(存储):**作用于工作内存的变量，它把工作内存中一个变量的值传送到主内存中，以便随 后的write操作使用。
 8. **write(写入)**:作用于主内存的变量，它把store操作从工作内存中得到的变量的值放入主内存的变量中。
+
+**注意：**
+1、如果需要把变量总主内存赋值给工作内存：read和load必须是连续；read只是把主内存的变量值从主内存加载到工作内存中，而load是真正把工作内存的值放到工作内存的变量副本中。
+2、如果需要把变量从工作内存同步回主内存；就需要执行顺序执行store跟write操作。store作用于工作内存，将工作内存变量值加载到主内存中，write是将主内存里面的值放入主内存的变量中。
 
 
 
@@ -405,7 +606,7 @@ LoadStore   // 读写
 
 java语言的规范
 
-#### 5.1.1 as-if-serival 
+#### 5.1.1 as-if-serival
 
 **单线程内的顺序不会改变, 单线程内如果几句话之间没有依赖 是可以改变的 比如a=1 b=2**
 
@@ -518,7 +719,7 @@ as-if-serial语义的意思是：不管怎么重排序（编译器和处理器�
 >
 >CAS操作不会阻塞当前资源 所以是一个乐观锁
 
-解决的问题:
+解决的问题:  保证原子性
 
 1. CAS可以多个线程同时对一个资源进行操作(相比volatile  )  只能保证一个共享变量的原子操作
 2. ABA问题   结合`AtomicStampedReference`解决
@@ -548,9 +749,28 @@ as-if-serial语义的意思是：不管怎么重排序（编译器和处理器�
 
 
 
+下面介绍这各种原子操作类
+
+1. **原子更新基本类型：使用原子方式更新基本类型**
+   + AtomicBoolean：原子更新布尔变量
+   + AtomicInteger：原子更新整型变量
+   + AtomicLong：原子更新长整型变量
+2. 原子更新数组：通过原子更新数组里的某个元素
+   + AtomicIntegerArray：原子更新整型数组的某个元素
+   + AtomicLongArray：原子更新长整型数组的某个元素
+   + AtomicReferenceArray：原子更新引用类型数组的某个元素
+3. **原子更新引用类型：更新引用类型**
+   + AtomicReference：原子更新引用类型
+   + AtomicReferenceFieldUpdater：原子更新引用类型里的字段
+   + AtomicMarkableReference：原子更新带有标记位的引用类型
+4. **原子更新字段：原子更新某个类的某个字段**
+   + AtomicIntegerFieldUpdater：原子更新整型字段
+   + AtomicLongFieldUpdater：原子更新长整型字段
+   + AtomicStampedReference：原子更新带有版本号的引用类型
 
 
-### 9.2 AtomicLong
+
+### 9.2 AtomicLong(随便挑一个说说)
 
 **流程图:** 上面代码`03`  `AtomicLong`流程图
 
@@ -595,6 +815,8 @@ JUC给我们提供了一个类，LongAdder, 它的作用和AtomicLong是一样�
 
 
 
+
+
 ## 10_锁方式解决多线程
 
 ### 10.1 ConcurrentHashMap
@@ -619,7 +841,7 @@ synchronized是一个Java关键字，是jvm层级的，它是一种互斥锁，�
 
 **java层面上说**:  可以修饰在代码块(锁住参数对象) 普通方法(锁this对象)  静态方法(锁当前类对象)
 
- **JVM来说**: 每个对象有一个对象头 synchronized存在对象头当众以下是对象头里Mark Word的存储结构
+ **JVM来说**: 每个对象有一个对象头     synchronized存在对象头当中
 
 #### 10.2.1 锁升级(锁膨胀)
 
@@ -645,11 +867,121 @@ Synchronized锁有四种状态: 无锁  偏向锁  轻量级锁  重量级锁
 
 
 
- ## 11_线程池
+#### 10.2.2 对比
+
+![](https://tva1.sinaimg.cn/large/e6c9d24ely1h58pykg0jsj20qu0h4acj.jpg)
 
 
 
+## 11_线程池
 
+>1. 线程底层和线程池
+>2. newCheThreadPool可缓存线程池
+>3. newFixedThreadPool固定个数线程池原理
+>4. newSingleThreadExecutor单线程池
+>5. 阿里巴巴为什么不推荐自带的线程池工具类
+>6. 提交任务时execute和submit的对比
+>7. 阿里巴巴生产环境中线程池如何调优
+>8. 处理不可捕获的异常 
+
+### 11.1 知识储备
+
+进程与线程:  
+
+> 背景:  处理器太快了 除了处理器之外的寄存器等等太慢了
+
+1. …… 概念
+2. 两者都是对时间段的一个描述  只是颗粒度不同
+3. 进程主要是针对资源进行管理 不在乎处理器的状态个数等等, 线程不在乎资源 仅仅是对处理器的调度  所以又说**线程是处理器的最小单位  进程是操作系统的最小单元 因为操作系统会给每个进程提前分配好资源**   又说进程之前的资源几乎是严格隔离的  线程之间可以共享
+4. 上下文切换的速度:  两者都需要进行上下文切换 但是因为线程主要在乎的是处理器不在乎资源,处理器进行切换的速度是非常快的 所以 **线程的切换远远快于进程**  **基于这个事实所以才会将进程再细分为线程**
+5. 扩展到多核下: 每一次的上下文切换 无论是线程还是进程都需要有处理器的参与 **所以单核下的多线程意义不大, 只能做到并发 不能做到并行 因为在同一进程下 处理器的时间片都是给一个进程的 多线程的意义就是使处理器“忙起来”** 
+
+
+
+JVM使用的KLT模型(原生不支持协程)  Java线程与OS线程保持1:1的映射关系 也就是说每都一个Java线程 OS也就都一个线程
+
+协程 使用的ULT模型 go python 所以说他们不是真正的多线程
+
+![](https://tva1.sinaimg.cn/large/e6c9d24ely1h5egdeuqg7j21zm0s8dlt.jpg)
+
+线程的六种生命状态:
+
+1. new  新建
+2. Runnable  运行
+3. Blocaked  阻塞
+4. Waitting  等待
+5. Timed_Waitting  超时等待
+6. Terminated  终结
+
+![](https://tva1.sinaimg.cn/large/e6c9d24ely1h5eg4ywljhj20pd0kaacf.jpg)
+
+
+
+### 14.2 线程池原理
+
+> 线程属于是稀缺资源  每一次创建销毁都需要很大的代价  所以线程池解决的一个很大的问题就是 如何对已经有的线程进行复用
+
+什么时候使用呢:
+
++ 单个任务处理时间比较短
++ 需要处理的任务数很大
+
+使用线程池的好处：
+
+- **降低资源消耗**。通过重复利用已创建的线程降低线程创建和销毁造成的消耗。
+- **提高响应速度**。当任务到达时，任务可以不需要等到线程创建就能立即执行。
+- **提高线程的可管理性**。线程是稀缺资源，如果无限制的创建，不仅会消耗系统资源，还会降低系统的稳定性，使用线程池可以进行统一的分配，调优和监控。
+
+ 所有的线程池都有一个父类接口: `Executor`  
+
+![image-20220821171448605](https://tva1.sinaimg.cn/large/e6c9d24ely1h5ei87i3v6j209109iq35.jpg) 
+
+线程池的工具类: 
+
+```java
+//注入此类 很多  其原理都是ThreadPoolExecutor的构造方法
+Executors.newSingleThreadExecutor();   
+```
+
+上文说过  线程是很珍贵的资源 所以不要使用线程池的工具类 推荐自己根据实际情况
+
+``` java
+public ThreadPoolExecutor(int corePoolSize,
+                          int maximumPoolSize,
+                          long keepAliveTime,
+                          TimeUnit unit,
+                          BlockingQueue<Runnable> workQueue,
+                          ThreadFactory threadFactory,
+                          RejectedExecutionHandler handler)
+```
+
+参数讲解:
+
+1. corePoolSize:  核心线程数 
+2. maximumPoolSize:  最大线程数  核心+非核心
+3. keepAliveTime:  最大运行线程休息时间  (休眠超时就停止)
+4. TimeUnit:  时间单位  上述3的单位
+5. workQueue:  存放未来得及执行的任务
+6. ThreadFactory:  创建线程的工厂 (创建线程不是我们new的 是使用工厂创建)
+7. RejectedExecutionHandler:  拒绝策略
+
+
+
+主要方法:
+
+1. **execute(Runnable command)** 执行给定的Runnable任务
+2. **submit( …)**提交给定的 任务进行执行，在任务执行完成后，返回相应的 Futur
+3. **shutdown()**关闭线程池 正在执行的继续执行 没执行的不执行
+4. **shutdownNow()**立即关闭
+
+ 流程:有任务进来时
+
+![](https://tva1.sinaimg.cn/large/e6c9d24ely1h5ejatvqv0j21d20u0tca.jpg)
+
+1. 如果核心线程没有满 调用上面的线程工厂创建线程 然后放入`workQueue阻塞队列中`等待执行
+2. 如果核心线程满了 但是`workQueue阻塞队列`没有满 则会加入到阻塞队列中
+3. 核心线程满了 但是最大线程数没有满 返回上述`1`操作 直到最大线程数和所有队列都满了
+4. 如果最大线程数和所有队列都满了  则会走上述`RejectedExecutionHandler阻塞策略`
 
 
 
@@ -856,26 +1188,262 @@ ThreadLocalMap的每次get、set、remove，都会清理过期的Entry（key为n
 
 
 
-# HashMap
-
-## 主要知识点
-
-1. Put方法底层源码解析
-2. 链表扩容
-3. 链表转红黑树
-4. Get方法
 
 
+## 14_AQS
 
-## HashMap数据结构
+> Java中的大部分同步类（Lock、Semaphore、ReentrantLock等）都是基于AbstractQueuedSynchronizer（简称为AQS）实现的。AQS是一种提供了原子式管理同步状态、阻塞和唤醒线程功能以及队列模型的简单框架。
 
-+ JDK1.8之前的HashMap由数组+链表组成的
+**全称:** `AbstractQueuedSynchronizer` 抽象队列同步器框架-基于信号量的工作方式, 是用来构建锁或者其他同步组件的基础框架。
 
-+ JDK1.8之后 数组+红黑树 + 单向链表 + 双向链表:   
+**功能:**  封装了下面的几个东西
 
-  解决哈希冲突时有了较大的变化，当链表长度大于阈值（或者红黑树的边界值，默认为8）并且当前数组的长度大于64时，此时此索引位置上的所有数据改为使用红黑树存储
+- 状态的原子性管理
+- 线程的阻塞与解除阻塞
+- 队列的管理
 
- 
+**AQS三大精华:**
+
++ spin:  自旋(死循环)
++ LocalSupport: 阻塞与唤醒线程
++ cas:  原子比较与交换
+
+两大特性锁:(知识储备)
+
+1. 可重入锁  :   同一个锁可以加入多次 (synchronized)
+2. 不可重入锁:   同一个锁不可以加入多次
+
+AQS 定义两种资源共享方式:
+
+1. **Exclusive**(独享)
+
+   只有一个线程能执行，如 `ReentrantLock`。又可分为公平锁和非公平锁，`ReentrantLock` 同时支持两种锁
+
+2. **Share**（共享）
+
+   多个线程可同时执行，如 `Semaphore/CountDownLatch`。`Semaphore`、`CountDownLatch`、 `CyclicBarrier`、`ReadWriteLock` 我们都会在后面讲到。
+
+   `ReentrantReadWriteLock` 可以看成是组合式，因为 `ReentrantReadWriteLock` 也就是读写锁允许多个线程同时对某一资源进行读。
+
+   不同的自定义同步器争用共享资源的方式也不同。自定义同步器在实现时只需要实现共享资源 state 的获取与释放方式即可，至于具体线程等待队列的维护（如获取资源失败入队/唤醒出队等），AQS 已经在上层已经帮我们实现好了。
+
+
+
+### 14.1 AQS核心变量
+
+> 构建队列是用了Node()内部类   双向链表
+
+1. state:  同步器状态  (信号量的体现): `private volatile int state;`
+
+   **记录当前同步器被加锁的次数**
+
+2. exclusiveOwnerThread:   互斥锁持有的线程  **指向获取锁的线程对象**
+
+   ``` java
+   private transient Thread exclusiveOwnerThread;  // 这个变量在父类中
+   ```
+
+3. head:  同步等待队列头
+
+4. tail: 同步等待队列尾
+
+
+
+### 14.2 工作流程图
+
+AQS流程图:
+
+1. 10个线程抢资源
+
+2. 第一个线程抢到了 
+
+   1. 将AQS的`state=state+1`  
+   2. exclusiveOwnerThread指向自己  表明是自己拿到了锁
+
+3. 其他九个线程进入队列中
+
+   队列的`next`指向下一个等待的线程
+
+4. 线程对资源使用完成 `state=state-1`
+
+5. 因为AQS是可重入锁  所以必须等到`state=0`时候才可以完全释放资源等待队列下一个元素
+
+
+
+### 14.3 公(非)公平锁 抢锁:
+
+>  ReentrantLock 默认采用非公平锁，除非你在构造方法中传入参数 true 。
+>
+> CAS操作保证原子性 保证state值的唯一
+
+总结：公平锁和非公平锁只有两处不同：
+
+1. 非公平锁在调用 lock 后，首先就会调用 CAS 进行一次抢锁，如果这个时候恰巧锁没有被占用，那么直接就获取到锁返回了。
+2. 非公平锁在 CAS 失败后，和公平锁一样都会进入到 tryAcquire 方法，在 tryAcquire 方法中，如果发现锁这个时候被释放了（state == 0），非公平锁会直接 CAS 抢锁，但是公平锁会判断等待队列是否有线程处于等待状态，如果有则不去抢锁，乖乖排到后面。
+
+公平锁和非公平锁就这两点区别，如果这两次 CAS 都不成功，那么后面非公平锁和公平锁是一样的，都要进入到阻塞队列等待唤醒。
+
+相对来说，非公平锁会有更好的性能，因为它的吞吐量比较大。当然，非公平锁让获取锁的时间变得更加不确定，可能会导致在阻塞队列中的线程长期处于饥饿状态。
+
+
+
+
+
+### 14.4 自旋插入队列
+
+```java
+private Node enq(final Node node) {
+    for (;;) {
+        Node t = tail;
+        if (t == null) { // Must initialize
+            if (compareAndSetHead(new Node()))
+                tail = head;
+        } else {
+            node.prev = t;
+            if (compareAndSetTail(t, node)) {
+                t.next = node;
+                return t;
+            }
+        }
+    }
+}
+```
+
+没有拿到锁的线程 插入到队列中, 这里保障线程不丢失 采用了自旋+Cas的操作 直到插入成功为止
+
+对了 这是一个双向链表的队列 (CLH队列的一个变种)
+
+
+
+### 14.5 唤醒与阻塞
+
+> 需要阻塞或者唤醒一个线程的时候，AQS都是使用LockSupport这个工具类来完成的。
+>
+> LockSupport是用来创建锁和其他同步类的基本线程阻塞原语。
+
+1. 在线程获取同步状态失败后，会加入到CHL队列中去，并且该节点会自旋式的不断的获取同步状态，在获取同步状态的过程中，需要判断当前线程是否需要被阻塞。`acquireQueued(final Node node, int arg)方法`
+2. 判断当前线程是否需要被阻塞。检查是否需要阻塞的方法shouldParkAfterFailedAcquire(p, node)，
+3. 是否进入阻塞条件:
+   1. 如果当前节点的前驱节点的等待状态为SIGNAL，则返回true
+   2. 如果当前节点的前驱节点的等待状态为CALCLE，则表示该线程的前驱节点已经被中断或者超时，需要从CHL中删除，直到回溯到ws <= 0,返回false
+   3. 若果当前节点的前驱节点的等待状态为非SIGNAL,非CANCLE，则以CAS的方式设置其前驱节点为的状态为SIGNAL，返回false.
+
+4. 前驱节点使用完资源 需要唤醒下一个节点线程
+
+5. LockSupport定义了一系列以park开头的方法来阻塞当前线程，unpark (Thread thread) 方法来唤醒一个被阻塞的线程。
+
+   
+
+### 14.6 CountDownLatch （倒计时器）
+
+``` java
+public CountDownLatch(int count) {}  // 初始阻塞线程数
+public void await() {}     // 加入队列中  直到count=0自动开始执行
+public void countDown() {}   // 线程执行完手动调用 作用是count-- 一般在final中执行
+public long getCount(){}
+```
+
+
+
+`CountDownLatch` 允许 `count` 个线程阻塞在一个地方，直至所有线程的任务都执行完毕。
+
+`CountDownLatch` 是共享锁的一种实现,它默认构造 AQS 的 `state` 值为 `count`。当线程使用 `countDown()` 方法时,其实使用了`tryReleaseShared`方法以 CAS 的操作来减少 `state`,直至 `state` 为 0 。当调用 `await()` 方法的时候，如果 `state` 不为 0，那就证明任务还没有执行完毕，`await()` 方法就会一直阻塞，也就是说 `await()` 方法之后的语句不会被执行。然后，`CountDownLatch` 会自旋 CAS 判断 `state == 0`，如果 `state == 0` 的话，就会释放所有等待的线程，`await()` 方法之后的语句得到执行。
+
+
+
+两种用法
+
+1. **某一线程在开始运行前等待 n 个线程执行完毕。**
+
+   将 `CountDownLatch` 的计数器初始化为 n （`new CountDownLatch(n)`），每当一个任务线程执行完毕，就将计数器减 1 （`countdownlatch.countDown()`），当计数器的值变为 0 时，在 `CountDownLatch 上 await()` 的线程就会被唤醒。一个典型应用场景就是启动一个服务时，主线程需要等待多个组件加载完毕，之后再继续执行。
+
+2. **实现多个线程开始执行任务的最大并行性。**
+
+   注意是并行性，不是并发，强调的是多个线程在某一时刻同时开始执行。类似于赛跑，将多个线程放到起点，等待发令枪响，然后同时开跑。做法是初始化一个共享的 `CountDownLatch` 对象，将其计数器初始化为 1 （`new CountDownLatch(1)`），多个线程在开始执行任务前首先 `coundownlatch.await()`，当主线程调用 `countDown()` 时，计数器变为 0，多个线程同时被唤醒。
+
+
+
+### 14.7 CyclicBarrier(循环栅栏)
+
+`CyclicBarrier` 和 `CountDownLatch` 非常类似，它也可以实现线程间的技术等待，但是它的功能比 `CountDownLatch` 更加复杂和强大。主要应用场景和 `CountDownLatch` 类似。
+
+> `CountDownLatch` 的实现是基于 AQS 的，而 `CycliBarrier` 是基于 `ReentrantLock`(`ReentrantLock` 也属于 AQS 同步器)和 `Condition` 的。
+
+`CyclicBarrier` 的字面意思是可循环使用（Cyclic）的屏障（Barrier）。它要做的事情是：让一组线程到达一个屏障（也可以叫同步点）时被阻塞，直到最后一个线程到达屏障时，屏障才会开门，所有被屏障拦截的线程才会继续干活。
+
+`CyclicBarrier` 默认的构造方法是 `CyclicBarrier(int parties)`，其参数表示屏障拦截的线程数量，每个线程调用 `await()` 方法告诉 `CyclicBarrier` 我已经到达了屏障，然后当前线程被阻塞。
+
+``` java
+// parties 就代表了有拦截的线程的数量，当拦截的线程数量达到这个值的时候就打开栅栏，让所有线程通过。
+public CyclicBarrier(int parties) { 
+    this(parties, null);
+}
+
+public CyclicBarrier(int parties, Runnable barrierAction) {
+    if (parties <= 0) throw new IllegalArgumentException();
+    this.parties = parties;
+    this.count = parties;
+    this.barrierCommand = barrierAction;
+}
+```
+
+下面的代码:  栅栏可以一次阻挡五个线程 也就是说线程阻塞达到五个时候一起执行  下面的100个线程相当于执行二十次
+
+``` java
+public static void testCyclicBarrier() throws InterruptedException {
+  CyclicBarrier cyclicBarrier = new CyclicBarrier(10);
+  for (int i = 0; i < 100; i++) {
+    Thread.sleep(1000);
+    new Thread(() -> {
+      try {
+        cyclicBarrier.await(10, TimeUnit.SECONDS);
+        System.out.println(Thread.currentThread().getName() + "等待中");
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+      System.out.println(Thread.currentThread().getName() + "执行完");
+    }).start();
+  }
+}
+```
+
+
+
+#### 14.8 CyclicBarrier 和 CountDownLatch 的区别
+
+下面这个是国外一个大佬的回答：
+
+`CountDownLatch` 是计数器，只能使用一次，而 `CyclicBarrier` 的计数器提供 `reset` 功能，可以多次使用。但是我不那么认为它们之间的区别仅仅就是这么简单的一点。我们来从 jdk 作者设计的目的来看，javadoc 是这么描述它们的：
+
+> CountDownLatch: A synchronization aid that allows one or more threads to wait until a set of operations being performed in other threads completes.(CountDownLatch: 一个或者多个线程，等待其他多个线程完成某件事情之后才能执行；) CyclicBarrier : A synchronization aid that allows a set of threads to all wait for each other to reach a common barrier point.(CyclicBarrier : 多个线程互相等待，直到到达同一个同步点，再继续一起执行。)
+
+对于 `CountDownLatch` 来说，重点是“一个线程（多个线程）等待”，而其他的 N 个线程在完成“某件事情”之后，可以终止，也可以等待。而对于 `CyclicBarrier`，重点是多个线程，在任意一个线程没有完成，所有的线程都必须等待。
+
+`CountDownLatch` 是计数器，线程完成一个记录一个，只不过计数不是递增而是递减，而 `CyclicBarrier` 更像是一个阀门，需要所有线程都到达，阀门才能打开，然后继续执行。
+
+### 14.9 ReentrantLock 和 ReentrantReadWriteLock
+
+**ReentrantReadWriteLock**是共享的: 支持多个读读操作
+
+**ReentrantLock**: 独享  哪怕是读也只运行一个线程
+
+![](https://tva1.sinaimg.cn/large/e6c9d24ely1h58pykg0jsj20qu0h4acj.jpg)
+
+`ReentrantLock` 和 `synchronized` 的区别在上面已经讲过了这里就不多做讲解。另外，需要注意的是：读写锁 `ReentrantReadWriteLock` 可以保证多个线程可以同时读，所以在读操作远大于写操作的时候，读写锁就非常有用了。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

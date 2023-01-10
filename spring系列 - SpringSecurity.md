@@ -1381,9 +1381,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * @Author 三更  B站： https://space.bilibili.com/663528522
- */
+
 @Data
 @NoArgsConstructor
 public class LoginUser implements UserDetails {
@@ -1471,9 +1469,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * @Author 三更  B站： https://space.bilibili.com/663528522
- */
+
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
 

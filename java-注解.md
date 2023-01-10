@@ -798,6 +798,14 @@ public class ReadProperties{
 该注解用在pojo类上，作用是生成对应的get/set/toString...方法
 toString（）方法只输出自己的属性，不会添加继承自父类的属性。
 
+会包含一下注解:
+
+- @Getter
+- @Setter
+- @RequiredArgsConstructor
+- @ToString
+- @EqualsAndHashCode
+
 
 
 # @Setter(lombok)

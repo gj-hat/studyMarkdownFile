@@ -77,7 +77,7 @@ Docker是一个CS架构的程序, 由两部分组成:
 
 + docker run    从镜像->容器
 + Docker pause/unpause     暂停/启动
-+ docker start/stop
++ docker start/stop    id
 
 + Docker ps       查看所有运行的容器及状态
 + docker logs     查看容器运行日志
